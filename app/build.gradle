@@ -1,0 +1,95 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android' version '2.0.21'
+    id 'com.google.devtools.ksp' version '2.0.21-1.0.27'
+}
+
+android {
+    namespace 'com.example.areadtext'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.areadtext"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Streaming ASR is CPU-bound; keep the two most common ABIs to limit APK size.
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    packagingOptions {
+        jniLibs {
+            // The Kotlin API only needs the JNI lib, not the (large) C/C++ API libs.
+            excludes += ["**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so"]
+        }
+        resources {
+            excludes += [
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            ]
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // Lifecycle (viewmodel + coroutines on main)
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4'
+
+    // Reliable model download with pause/resume + failure recovery
+    implementation 'androidx.work:work-runtime-ktx:2.9.1'
+
+    // On-device TTS (vits / matcha / kokoro / zipvoice / supertonic / pocket)
+    // v1.13.7 的 AAR 与传递依赖 sherpa-onnx-jvm 重复打包了同一批 com.k2fsa.sherpa.onnx 类，
+    // 主 AAR 已含全部 Kotlin API 类与 JNI .so，因此排除 jvm 模块避免 Duplicate class 打包错误。
+    implementation('com.github.k2-fsa:sherpa-onnx:v1.13.7') {
+        exclude group: 'com.github.k2-fsa.sherpa-onnx', module: 'sherpa-onnx-jvm'
+    }
+
+    // HTTP Range downloads
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // tar.bz2 extraction for model archives
+    implementation 'org.apache.commons:commons-compress:1.27.1'
+
+    // Transcript history
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    ksp 'androidx.room:room-compiler:2.6.1'
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}

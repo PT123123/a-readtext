@@ -1,0 +1,173 @@
+<resources>
+    <string name="app_name">ReadText</string>
+
+    <!-- Recording -->
+    <string name="start_recording">开始录音</string>
+    <string name="stop_recording">停止</string>
+    <string name="pause_recording">暂停</string>
+    <string name="resume_recording">继续</string>
+    <string name="idle_status">待机</string>
+    <string name="recording_status">录音中…</string>
+    <string name="paused_status">已暂停</string>
+    <string name="hint_no_model">未下载模型：录音 / 导入音频仍可用，下载模型后即可转写</string>
+    <string name="hint_ready">点击「开始录音」即可实时转写</string>
+    <string name="menu_models">模型管理</string>
+    <string name="menu_history">历史记录</string>
+    <string name="menu_import">导入音频</string>
+
+    <!-- 无模型录音 / 导入 -->
+    <string name="notification_no_model">仅录音（未加载识别模型）</string>
+    <string name="pending_transcribe">待转写</string>
+    <string name="history_pending_no_model">[待转写] 请先下载识别模型，下载后即可在此转写</string>
+    <string name="history_pending_ready">[待转写] 点击「转写」即可开始</string>
+    <string name="history_pending_transcribing">[待转写] 正在转写…</string>
+    <string name="history_pending_empty">[未识别到语音] 该录音中未检测到语音内容</string>
+    <string name="transcribe_empty">未识别到语音</string>
+    <string name="importing_status">正在导入 / 转写…</string>
+    <string name="transcribing_status">正在转写…</string>
+    <string name="import_pending">音频已导入，下载模型后可在历史记录中转写</string>
+    <string name="import_success">导入并转写完成</string>
+    <string name="import_failed">导入失败：%1$s</string>
+    <string name="action_transcribe">转写</string>
+    <string name="transcribe_no_model">请先下载识别模型</string>
+    <string name="transcribe_failed">转写失败</string>
+    <string name="transcribe_success">转写完成</string>
+
+    <!-- Foreground service / notification -->
+    <string name="channel_name">语音转写</string>
+    <string name="channel_description">实时语音识别前台服务</string>
+    <string name="notification_title">正在实时转写</string>
+    <string name="notification_content">点击返回应用</string>
+
+    <!-- Model manager -->
+    <string name="model_manager_title">模型管理</string>
+    <string name="model_status_not_installed">未下载</string>
+    <string name="model_status_downloading">下载中</string>
+    <string name="model_status_verifying">校验中</string>
+    <string name="model_status_paused">已暂停</string>
+    <string name="model_status_installed">已就绪</string>
+    <string name="model_status_failed">失败</string>
+    <string name="model_status_queued">排队中</string>
+    <string name="action_download">下载</string>
+    <string name="action_pause">暂停</string>
+    <string name="action_resume">继续</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_set_active">设为当前模型</string>
+    <string name="active_model">当前使用</string>
+    <string name="add_custom_title">添加自定义模型</string>
+    <string name="custom_url_hint">模型压缩包 URL（.tar.bz2 或 .zip）</string>
+    <string name="custom_name_hint">模型显示名称（可选）</string>
+    <string name="add_custom">添加并下载</string>
+    <string name="download_channel_name">模型下载</string>
+    <string name="download_notification_title">模型下载</string>
+    <string name="download_progress">%1$s %2$d%%</string>
+    <string name="download_verifying">校验模型完整性…</string>
+    <string name="model_not_ready">模型未就绪，无法录音</string>
+    <string name="no_network">无网络，无法下载</string>
+    <string name="free_space_error">存储空间不足</string>
+    <string name="custom_required_fields">请填写模型地址</string>
+    <string name="model_download_link">下载链接</string>
+    <string name="action_copy_link">复制链接</string>
+    <string name="link_copied">下载链接已复制</string>
+
+    <!-- Custom Model Dialog -->
+    <string name="custom_model_dialog_title">添加自定义模型</string>
+    <string name="custom_model_name_hint">模型名称</string>
+    <string name="custom_model_url_hint">模型下载链接</string>
+    <string name="custom_model_add">添加</string>
+    <string name="custom_model_cancel">取消</string>
+    <string name="custom_model_success">自定义模型已添加</string>
+    <string name="custom_model_error_name_empty">请输入模型名称</string>
+    <string name="custom_model_error_url_invalid">请输入有效的下载链接</string>
+
+    <!-- 权限相关 -->
+    <string name="permission_microphone">麦克风权限</string>
+    <string name="permission_notifications">通知权限</string>
+    <string name="permission_internet">网络权限</string>
+    <string name="permission_required_title">需要权限</string>
+    <string name="permission_required_message">应用需要以下权限才能正常工作：</string>
+    <string name="permission_denied_message">权限被拒绝，应用将无法正常工作。</string>
+    <string name="permission_settings">前往设置</string>
+
+    <!-- 历史记录 -->
+    <string name="history_title">历史记录</string>
+    <string name="history_empty">暂无记录</string>
+    <string name="delete">删除</string>
+    <string name="copy">复制</string>
+    <string name="share">分享</string>
+    <string name="play">播放</string>
+
+    <!-- 主窗口录音列表 -->
+    <string name="recordings_label">录音列表</string>
+    <string name="recordings_empty">暂无录音，录完一条会显示在这里</string>
+    <string name="stop_playback">停止</string>
+
+    <!-- 主窗口 Tabs -->
+    <string name="tab_realtime">实时转写</string>
+    <string name="tab_non_realtime">非实时转写</string>
+    <string name="transcript_label">转写内容</string>
+    <string name="copied">已复制</string>
+    <string name="nothing_to_copy">没有可复制的内容</string>
+
+    <!-- 设置界面 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_storage_category">存储管理</string>
+    <string name="settings_storage_info">存储信息</string>
+    <string name="settings_clear_cache">清理缓存</string>
+    <string name="settings_clear_cache_summary">删除临时文件释放存储空间</string>
+        <string name="filter_language">语言</string>
+    <string name="sort_by">排序</string>
+<string name="settings_manage_models">管理模型</string>
+    <string name="settings_manage_recordings">管理录音</string>
+    <string name="settings_paste_custom_models">批量粘贴模型</string>
+    <string name="settings_paste_custom_models_summary">粘贴多行「名称|URL」即可添加，无需重新编译</string>
+    <string name="paste_format_hint">格式：每行一个模型（# 开头为注释行），支持两种写法：\n1) 名称|下载URL\n2) 仅下载URL（名称自动取文件名）</string>
+    <string name="paste_input_hint">在此粘贴模型列表</string>
+    <string name="paste_save_add">保存并添加</string>
+    <string name="paste_custom_list_title">已添加的自定义模型</string>
+    <string name="paste_custom_empty">暂无自定义模型，粘贴上面格式的内容即可添加</string>
+    <string name="paste_empty_error">没有可添加的内容，请先粘贴模型地址</string>
+    <string name="paste_success">已添加 %1$d 个模型</string>
+    <string name="paste_partial_error">已添加 %1$d 个，%2$d 个无效链接被跳过</string>
+    <string name="settings_about_category">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_about">关于应用</string>
+    <string name="settings_github">GitHub</string>
+    <string name="settings_github_summary">查看源代码和问题反馈</string>
+    <string name="settings_license">开源协议</string>
+    <string name="settings_developer_category">开发者选项</string>
+    <string name="settings_debug_mode">调试模式</string>
+    <string name="settings_export_logs">导出日志</string>
+    <string name="settings_device_info">设备信息</string>
+
+    <!-- 存储相关 -->
+    <string name="storage_sufficient">存储空间充足</string>
+    <string name="storage_insufficient">存储空间不足</string>
+    <string name="storage_checking">正在检查存储空间...</string>
+    <string name="storage_models_size">模型占用: %1$s</string>
+    <string name="storage_recordings_size">录音占用: %1$s</string>
+    <string name="storage_cache_size">缓存占用: %1$s</string>
+    <string name="storage_cleared">已清理 %1$s 缓存</string>
+    <string name="storage_clean_failed">清理缓存失败</string>
+
+    <!-- 帮助和FAQ -->
+    <string name="help_title">帮助中心</string>
+    <string name="faq_title">常见问题</string>
+    <string name="faq_question1">如何开始使用应用？</string>
+    <string name="faq_answer1">首次使用时，请先进入"模型管理"下载识别模型。下载完成后，返回主界面点击"开始录音"即可开始实时语音转写。</string>
+    <string name="faq_question2">为什么无法开始录音？</string>
+    <string name="faq_answer2">请确保：1. 已授予麦克风权限；2. 已下载并安装识别模型；3. 设备有足够的存储空间。可以在设置中检查权限和存储状态。</string>
+    <string name="faq_question3">模型下载失败怎么办？</string>
+    <string name="faq_answer3">模型下载失败可能的原因：1. 网络连接不稳定；2. 存储空间不足；3. 下载链接失效。请检查网络连接和存储空间，或尝试重新下载。</string>
+    <string name="faq_question4">如何添加自定义模型？</string>
+    <string name="faq_answer4">在"模型管理"界面点击"添加"按钮，输入模型名称和下载链接。支持标准的sherpa-onnx模型格式（.tar.bz2或.zip）。</string>
+    <string name="faq_question5">识别不准确怎么办？</string>
+    <string name="faq_answer5">识别准确度可能受以下因素影响：1. 环境噪音；2. 音频质量；3. 模型选择。建议在相对安静的环境中使用，并根据需要选择不同的模型。</string>
+    <string name="faq_question6">录音文件保存在哪里？</string>
+    <string name="faq_answer6">录音文件（WAV格式）和转写文本保存在应用的私有存储空间中。您可以在"历史记录"中查看和管理所有录音。</string>
+    <string name="faq_question7">应用需要网络连接吗？</string>
+    <string name="faq_answer7">模型下载时需要网络连接，但识别过程完全离线运行。模型下载完成后，即使在没有网络的情况下也能正常使用语音识别功能。</string>
+    <string name="faq_question8">如何清理存储空间？</string>
+    <string name="faq_answer8">在"设置"→"存储管理"中可以清理缓存、管理模型和录音文件。删除不需要的模型和历史记录可以释放大量存储空间。</string>
+</resources>

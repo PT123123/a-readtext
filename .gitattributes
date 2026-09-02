@@ -1,0 +1,8 @@
+# Keep shell scripts and the Gradle wrapper with LF endings so they stay runnable
+# when the repo is cloned on Linux/macOS.
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.jpg binary

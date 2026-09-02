@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础颜色 -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- 主题色 -->
+    <color name="seed">#1565C0</color>
+    <color name="seed_dark">#0D47A1</color>
+    <color name="seed_light">#5E92F3</color>
+    
+    <!-- 功能色 -->
+    <color name="rec">#D32F2F</color>
+    <color name="ok">#2E7D32</color>
+    <color name="warning">#F57C00</color>
+    <color name="info">#1976D2</color>
+    
+    <!-- 状态色 -->
+    <color name="status_installed">#388E3C</color>
+    <color name="status_downloading">#1976D2</color>
+    <color name="status_failed">#D32F2F</color>
+    <color name="status_paused">#F57C00</color>
+    <color name="status_queued">#757575</color>
+    
+    <!-- UI元素颜色 -->
+    <color name="divider">#E0E0E0</color>
+    <color name="background">#FAFAFA</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+</resources>

@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // sherpa-onnx prebuilt AAR is published here (package com.k2fsa.sherpa.onnx)
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+
+rootProject.name = "AReadText"
+include(":app")
