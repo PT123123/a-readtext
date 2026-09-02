@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:menu="@menu/main_menu"
+        app:title="@string/app_name" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabGravity="fill"
+        app:tabMode="fixed">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tab_realtime" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tab_non_realtime" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ================= 实时转写 Tab ================= -->
+        <LinearLayout
+            android:id="@+id/llRealtime"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/idle_status"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="@string/transcript_label"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnCopyTranscript"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/copy"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/tvTranscript"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="140dp"
+                    android:padding="12dp"
+                    android:textSize="18sp"
+                    android:textIsSelectable="true"
+                    android:hint="@string/hint_ready" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/tvRecordingsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/recordings_label"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRecordings"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvRecordingsEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/recordings_empty"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnRecord"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="@string/start_recording"
+                    android:enabled="false" />
+
+                <Button
+                    android:id="@+id/btnPause"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/pause_recording"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ================= 非实时转写 Tab ================= -->
+        <LinearLayout
+            android:id="@+id/llNonRealtime"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="4dp"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHistory"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvHistoryEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/history_empty"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

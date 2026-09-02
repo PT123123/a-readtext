@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- 存储管理 -->
+    <PreferenceCategory
+        android:title="@string/settings_storage_category"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:id="@+id/pref_storage_info"
+            android:key="storage_info"
+            android:title="@string/settings_storage_info"
+            app:iconSpaceReserved="false"
+            app:summary="" />
+
+        <Preference
+            android:id="@+id/pref_clear_cache"
+            android:key="clear_cache"
+            android:title="@string/settings_clear_cache"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconSpaceReserved="false"
+            app:summary="@string/settings_clear_cache_summary" />
+
+        <Preference
+            android:id="@+id/pref_manage_models"
+            android:key="manage_models"
+            android:title="@string/settings_manage_models"
+            app:icon="@android:drawable/ic_menu_sort_by_size"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:id="@+id/pref_paste_custom_models"
+            android:key="paste_custom_models"
+            android:title="@string/settings_paste_custom_models"
+            app:icon="@android:drawable/ic_menu_edit"
+            app:iconSpaceReserved="false"
+            app:summary="@string/settings_paste_custom_models_summary" />
+
+        <Preference
+            android:id="@+id/pref_manage_recordings"
+            android:key="manage_recordings"
+            android:title="@string/settings_manage_recordings"
+            app:icon="@android:drawable/ic_menu_slideshow"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <!-- 应用信息 -->
+    <PreferenceCategory
+        android:title="@string/settings_about_category"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:id="@+id/pref_version"
+            android:key="version"
+            android:title="@string/settings_version"
+            app:iconSpaceReserved="false"
+            app:summary="" />
+
+        <Preference
+            android:id="@+id/pref_about"
+            android:key="about"
+            android:title="@string/settings_about"
+            app:icon="@android:drawable/ic_menu_info_details"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:id="@+id/pref_github"
+            android:key="github"
+            android:title="@string/settings_github"
+            app:iconSpaceReserved="false"
+            app:summary="@string/settings_github_summary" />
+
+        <Preference
+            android:id="@+id/pref_license"
+            android:key="license"
+            android:title="@string/settings_license"
+            app:iconSpaceReserved="false"
+            app:summary="Apache-2.0" />
+    </PreferenceCategory>
+
+    <!-- 开发者选项 -->
+    <PreferenceCategory
+        android:title="@string/settings_developer_category"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreference
+            android:id="@+id/pref_debug_mode"
+            android:key="debug_mode"
+            android:title="@string/settings_debug_mode"
+            app:iconSpaceReserved="false"
+            android:defaultValue="false" />
+
+        <Preference
+            android:id="@+id/pref_export_logs"
+            android:key="export_logs"
+            android:title="@string/settings_export_logs"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:id="@+id/pref_device_info"
+            android:key="device_info"
+            android:title="@string/settings_device_info"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

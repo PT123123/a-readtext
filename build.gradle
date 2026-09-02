@@ -1,0 +1,5 @@
+// Top-level build file. AGP version must be declared here for Gradle to resolve it.
+plugins {
+    id 'com.android.application' version '8.1.4' apply false
+}
+tasks.register("clean") { delete(rootProject.buildDir) }
