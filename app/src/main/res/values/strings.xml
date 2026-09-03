@@ -170,4 +170,37 @@
     <string name="faq_answer7">模型下载时需要网络连接，但识别过程完全离线运行。模型下载完成后，即使在没有网络的情况下也能正常使用语音识别功能。</string>
     <string name="faq_question8">如何清理存储空间？</string>
     <string name="faq_answer8">在"设置"→"存储管理"中可以清理缓存、管理模型和录音文件。删除不需要的模型和历史记录可以释放大量存储空间。</string>
+    <string name="notification_channel_read">离线朗读</string>
+    <string name="notification_channel_read_desc">离线 TTS 朗读前台服务</string>
+
+    <!-- 书架 / 阅读器 -->
+    <string name="shelf_title">书架</string>
+    <string name="empty_shelf">书架还是空的\n点击右下角 + 导入一本本地 EPUB</string>
+    <string name="import_book">导入 EPUB</string>
+    <string name="import_epub_done">已导入</string>
+    <string name="import_epub_failed">导入失败，文件可能不是有效的 EPUB</string>
+    <string name="delete_book_confirm">删除本书？本地文件与朗读进度将被移除</string>
+    <string name="chapter_count">%1$d 章</string>
+    <string name="model_manager">模型管理</string>
+    <string name="settings">设置</string>
+    <string name="reading_settings">阅读设置</string>
+    <string name="font_inc">字号 +</string>
+    <string name="font_dec">字号 −</string>
+    <string name="theme_paper">纸白主题</string>
+    <string name="theme_sepia">米黄主题</string>
+    <string name="theme_night">夜间主题</string>
+    <string name="model_manager_short">模型管理</string>
+    <string name="prev_paragraph">上一段</string>
+    <string name="next_paragraph">下一段</string>
+    <string name="prev_sentence">上一句</string>
+    <string name="next_sentence">下一句</string>
+    <string name="prev_chapter">上一章</string>
+    <string name="next_chapter">下一章</string>
+    <string name="pause">暂停</string>
+    <string name="speed">语速</string>
+    <string name="book_load_failed">书籍加载失败</string>
+    <string name="book_not_ready">书籍尚未就绪，请稍候</string>
+    <string name="notification_ready">已就绪 · 打开阅读器开始朗读</string>
+    <string name="cancel">取消</string>
+    <string name="stop">停止</string>
 </resources>

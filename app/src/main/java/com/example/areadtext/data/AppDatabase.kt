@@ -7,9 +7,14 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [TranscriptEntity::class], version = 2, exportSchema = false)
+@Database(
+    entities = [TranscriptEntity::class, BookEntity::class, ProgressEntity::class],
+    version = 3,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transcriptDao(): TranscriptDao
+    abstract fun bookDao(): BookDao
 
     companion object {
         @Volatile
@@ -22,6 +27,34 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v2 -> v3: 新增书架 books 表 + 朗读进度 reading_progress 表。 */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS `books` (
+                        `bookId` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `author` TEXT NOT NULL,
+                        `filePath` TEXT NOT NULL,
+                        `coverPath` TEXT,
+                        `chapterCount` INTEGER NOT NULL,
+                        `addedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`bookId`)
+                    )"""
+                )
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS `reading_progress` (
+                        `bookId` TEXT NOT NULL,
+                        `chapterIndex` INTEGER NOT NULL,
+                        `paragraphIndex` INTEGER NOT NULL,
+                        `sentenceIndex` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`bookId`)
+                    )"""
+                )
+            }
+        }
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -29,7 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "areadtext.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build().also { INSTANCE = it }
             }
     }

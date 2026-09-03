@@ -9,7 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.example.areadtext.asr.SherpaStreamingAsr
+import com.example.areadtext.reader.OfflineTtsEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,9 +84,20 @@ object ModelManager {
             ?: ModelCatalog.all(context).firstOrNull { isInstalled(context, it) }
         candidate ?: return null
         val dir = installedDirectory(context, candidate)
-        // TODO(TTS): replace the ASR-specific SherpaStreamingAsr.isModelValid with a TTS
-        //  native load-test (e.g. SherpaOnnxOfflineTts) once the text-to-speech engine lands.
-        return if (SherpaStreamingAsr.isModelValid(dir)) dir else null
+        // TTS 原生加载测试：模型文件错误/损坏（缺 tokens.txt 或 .onnx 配置不符）→ 视为不可用。
+        return if (OfflineTtsEngine.isModelValid(dir)) dir else null
+    }
+
+    /**
+     * 返回当前激活（或首个已安装）模型的安装目录，不做原生加载校验。
+     * 供 TTS 朗读引擎使用：引擎 init() 自会构造原生实例校验，避免双重加载。
+     */
+    fun getInstalledDirectory(context: Context): File? {
+        val id = getActiveModelId(context)
+        val candidate = id?.let { ModelCatalog.findById(context, it) }
+            ?.takeIf { isInstalled(context, it) }
+            ?: ModelCatalog.all(context).firstOrNull { isInstalled(context, it) }
+        return candidate?.let { installedDirectory(context, it) }
     }
 
     // ---- work control ----

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_prev_chapter"
+        android:title="@string/prev_chapter"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_next_chapter"
+        android:title="@string/next_chapter"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_settings"
+        android:title="@string/reading_settings"
+        app:showAsAction="never" />
+</menu>

@@ -5,11 +5,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- 朗读前台服务以 mediaPlayback 类型运行 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- ModelDownloadWorker 通过 WorkManager setForeground() 以 dataSync 类型运行，Android 14+ 必须声明对应权限 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
 
@@ -22,7 +25,7 @@
         android:theme="@style/Theme.AReadText">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ShelfActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -30,6 +33,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".ui.ReaderActivity"
+            android:exported="false"
+            android:launchMode="singleTask" />
 
         <activity
             android:name=".ModelManagerActivity"
@@ -52,6 +65,13 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <!-- 离线朗读前台服务：段落级调度 + MediaStyle 通知（MoRealm 架构） -->
+        <service
+            android:name=".service.TtsReadAloudService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <!--
           ModelDownloadWorker 通过 WorkManager setForeground() 以 dataSync 类型启动前台服务。
