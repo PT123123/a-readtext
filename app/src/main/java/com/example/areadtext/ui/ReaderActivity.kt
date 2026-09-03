@@ -107,7 +107,6 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         highlightJob?.cancel()
         persistProgress()
         super.onDestroy()

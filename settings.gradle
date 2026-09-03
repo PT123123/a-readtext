@@ -13,6 +13,8 @@ dependencyResolutionManagement {
         mavenCentral()
         // sherpa-onnx prebuilt AAR is published here (package com.k2fsa.sherpa.onnx)
         maven { url = uri("https://jitpack.io") }
+        // MuPDF official Maven repo (com.artifex.mupdf:fitz) — AGPL-3.0 native text extraction
+        maven { url = uri("https://maven.ghostscript.com") }
     }
 }
 

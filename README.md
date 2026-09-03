@@ -105,7 +105,11 @@ just build / just install          # 或使用 justfile
 
 ## 许可证 / 致谢
 
-Apache-2.0 License
+**本仓库整体以 AGPL-3.0 分发。** 原因：PDF 文本提取内核使用 MuPDF（AGPL-3.0），
+按 AGPL 传染条款，整个应用需以 AGPL 兼容协议开源。历史版本曾为 Apache-2.0
+（PDF 用 pdfbox-android），自 MuPDF 迁移起协议变更为 AGPL-3.0。
+
+- MuPDF（PDF 内核，AGPL-3.0）: https://mupdf.com / https://maven.ghostscript.com
 - sherpa-onnx: https://github.com/k2-fsa/sherpa-onnx
 - 参考：HandyReader / MoRealm「墨境」/ FolioReader-Android / Lector
 - 工程骨架源于 aphone-s2t（本仓库父目录）

@@ -1,17 +1,11 @@
 package com.example.areadtext
 
 import android.app.Application
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 /**
- * 应用入口：初始化第三方库所需的 Android 资源。
+ * 应用入口。
  *
- *  - pdfbox-android（PDF 文本提取）需要在首次使用前加载字体资源，
- *    否则 PDFTextStripper 在处理含嵌入字体的 PDF 时会抛异常。
+ * 说明：历史版本在这里初始化 pdfbox-android 的字体资源（PDFBoxResourceLoader），
+ * 迁移到 MuPDF 后不再需要任何第三方库的 Android 资源预加载。
  */
-class App : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        PDFBoxResourceLoader.init(this)
-    }
-}
+class App : Application()
