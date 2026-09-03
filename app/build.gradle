@@ -80,9 +80,11 @@ dependencies {
     // EPUB 解析（XHTML 清洗 / OPF 元数据）
     implementation 'org.jsoup:jsoup:1.17.2'
 
-    // PDF 文本提取（Android 移植版 PDFBox 2.x，去掉了 java.awt 依赖；
-    // 原版 org.apache.pdfbox:pdfbox 3.x 引用 java.awt.*，Android 运行时加载即 NoClassDefFoundError 闪退）
-    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+    // PDF 文本提取。从 pdfbox-android 2.0.27.0 迁移到 MuPDF（AGPL-3.0）：
+    //  pdfbox-android 移植版在部分 PDF（OCR 生成、子集化 TrueType 字体）上提取出"一页几个字"的错误结果，
+    //  而 MuPDF 同一内核的 PyMuPDF 实测对该类文件 100% 完整提取（49.6 万字符/178 页无空页）。
+    //  注：MuPDF 为 AGPL-3.0，按 AGPL 要求本项目需整体以 AGPL 兼容协议开源（当前 README 声明需同步更新）。
+    implementation 'com.artifex.mupdf:fitz:1.28.3'
 
     // Lifecycle (viewmodel + coroutines on main)
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'

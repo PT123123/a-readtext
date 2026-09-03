@@ -4,8 +4,8 @@ import android.graphics.Color
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.BackgroundColorSpan
-import android.text.style.ClickableSpan
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -80,31 +80,57 @@ class ParagraphAdapter(
         val isCurrentPara = position == highlightParagraph
         tv.setBackgroundColor(if (isCurrentPara) style.currentParaBg else Color.TRANSPARENT)
 
-        if (p.sentences.isEmpty()) {
-            tv.text = p.text
-            tv.movementMethod = null
-            return
-        }
+        // 重要：不要给句子挂 ClickableSpan / LinkMovementMethod。
+        // 联想平板（ZUI）上，带 ClickableSpan 的 SpannableString 在文本布局阶段
+        // 会算出错误字形（正文只画出零星字母），setLayerType(SOFTWARE) 也拦不住
+        // （bug 在布局层而非 GPU 绘制层）。已实测：去掉 ClickableSpan 后渲染正常。
+        // 因此"点句跳读"改为在 OnTouch 里用 Layout.getOffsetForHorizontal 反查
+        // 点击坐标命中的句子，渲染路径与普通 TextView 完全一致，不可能触发该 bug。
         val ss = SpannableString(p.text)
         val len = ss.length
         p.sentences.forEachIndexed { si, s ->
             val start = s.start.coerceIn(0, len)
             val end = s.end.coerceIn(start, len)
-            if (end > start) {
-                val click = object : ClickableSpan() {
-                    override fun onClick(widget: View) = onSentenceTap(position, si)
-                }
-                ss.setSpan(click, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                if (isCurrentPara && si == highlightSentence) {
-                    ss.setSpan(
-                        BackgroundColorSpan(style.sentenceBg), start, end,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                    )
-                }
+            if (end > start && isCurrentPara && si == highlightSentence) {
+                ss.setSpan(
+                    BackgroundColorSpan(style.sentenceBg), start, end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                )
             }
         }
         tv.text = ss
-        tv.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+        tv.movementMethod = null
+        tv.setOnTouchListener(null)
+        tv.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val x = event.x.toInt() - tv.totalPaddingLeft + tv.scrollX
+                val y = event.y.toInt() - tv.totalPaddingTop + tv.scrollY
+                val layout = tv.layout
+                if (layout != null) {
+                    val line = layout.getLineForVertical(y)
+                    if (y >= layout.getLineTop(line) && y <= layout.getLineBottom(line) &&
+                        x >= layout.getLineLeft(line) && x <= layout.getLineRight(line)
+                    ) {
+                        val offset = layout.getOffsetForHorizontal(line, x.toFloat())
+                        val si = findSentenceAt(p, offset)
+                        if (si >= 0) {
+                            onSentenceTap(position, si)
+                            return@setOnTouchListener true
+                        }
+                    }
+                }
+            }
+            false
+        }
+    }
+
+    /** 根据点击的字符偏移反查所属句子（含端点，兼容 getOffsetForHorizontal 右偏）。 */
+    private fun findSentenceAt(p: Paragraph, offset: Int): Int {
+        for (i in p.sentences.indices) {
+            val s = p.sentences[i]
+            if (offset >= s.start && offset <= s.end) return i
+        }
+        return -1
     }
 
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
