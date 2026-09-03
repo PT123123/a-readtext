@@ -53,7 +53,7 @@ class ShelfActivity : AppCompatActivity() {
 
         dao = AppDatabase.get(this).bookDao()
         adapter = ShelfAdapter(
-            onOpen = { book -> openBook(book) },
+            open = { book -> openBook(book) },
             onLongPress = { book -> confirmDelete(book) },
         )
         binding.shelfList.layoutManager = GridLayoutManager(this, 3)

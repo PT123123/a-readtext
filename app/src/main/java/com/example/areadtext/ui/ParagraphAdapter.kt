@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.areadtext.databinding.ItemReaderParagraphBinding
-import com.example.areadtext.reader.Paragraph
+import com.example.areadtext.reader.book.Paragraph
 
 /** 阅读器配色/排版样式（legado 风格的"背景-正文-高亮"三元组）。 */
 data class ReaderStyle(

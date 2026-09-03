@@ -426,7 +426,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        getString(R.string.import_failed, e.message ?: e.javaClass.simpleName),
+                        getString(R.string.import_failed),
                         Toast.LENGTH_LONG
                     ).show()
                     processing = false

@@ -2,6 +2,7 @@ package com.example.areadtext.reader.book
 
 import android.content.Context
 import android.util.Log
+import com.example.areadtext.reader.TextSegmenter
 import java.io.File
 
 /**
@@ -20,7 +21,7 @@ object MdBookParser : BookParser {
         Regex("""\[(.+?)\]\(.*?\)"""),       // [text](url) → text
         Regex("""^\s*[-*]\s+"""),            // - 列表 → 空
         Regex("""^\s*\d+\.\s+"""),           // 1. 列表 → 空
-        Regex("""```.*?```", RegexOption.DOT_ALL), // 代码块 → 空
+        Regex("```.*?```", RegexOption.DOT_MATCHES_ALL), // 代码块 → 空
         Regex("""`(.+?)`"""),                // `代码`
     )
 
@@ -60,7 +61,8 @@ object MdBookParser : BookParser {
     }
 
     private fun extractTitle(file: File, raw: String): String {
-        val m = Regex("""^#\s+(.+)$""", RegexOption.MULTILINE).find(raw)
+        // 匹配 "# 标题" 行并捕获标题；MULTILINE 下 ^ 锚定行首，. 不跨行即到行尾，无需行尾锚。
+        val m = Regex("""^#\s+(.+)""", RegexOption.MULTILINE).find(raw)
         return m?.groupValues?.get(1)?.trim()?.take(60) ?: file.nameWithoutExtension
     }
 
