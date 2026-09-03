@@ -1,8 +1,8 @@
 # Android 应用 - Just 命令文件
 # 使用方法: just [command]
 
-# adb 命令（未加入 PATH 时可用 --set ADB=... 覆盖）
-ADB := "adb"
+# adb 命令（自动解析：Windows/WSL 下优先 adb.exe；可用 --set ADB=... 覆盖）
+ADB := `bash scripts/resolve_adb.sh`
 
 # APK 路径
 DEBUG_APK := "app/build/outputs/apk/debug/app-debug.apk"
