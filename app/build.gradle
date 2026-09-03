@@ -80,8 +80,9 @@ dependencies {
     // EPUB 解析（XHTML 清洗 / OPF 元数据）
     implementation 'org.jsoup:jsoup:1.17.2'
 
-    // PDF 文本提取（多格式图书支持）
-    implementation 'org.apache.pdfbox:pdfbox:3.0.3'
+    // PDF 文本提取（Android 移植版 PDFBox 2.x，去掉了 java.awt 依赖；
+    // 原版 org.apache.pdfbox:pdfbox 3.x 引用 java.awt.*，Android 运行时加载即 NoClassDefFoundError 闪退）
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
 
     // Lifecycle (viewmodel + coroutines on main)
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
