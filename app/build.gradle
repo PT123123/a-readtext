@@ -42,6 +42,10 @@ android {
         viewBinding true
     }
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     packagingOptions {
         jniLibs {
             // The Kotlin API only needs the JNI lib, not the (large) C/C++ API libs.
@@ -63,6 +67,12 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // MediaStyle 通知（朗读前台服务的媒体控制）
+    implementation 'androidx.media:media:1.7.0'
+
+    // EPUB 解析（XHTML 清洗 / OPF 元数据）
+    implementation 'org.jsoup:jsoup:1.17.2'
 
     // Lifecycle (viewmodel + coroutines on main)
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
