@@ -2,6 +2,7 @@ package com.example.areadtext.reader.book
 
 import android.content.Context
 import android.util.Log
+import com.example.areadtext.reader.TextSegmenter
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper

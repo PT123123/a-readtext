@@ -2,6 +2,7 @@ package com.example.areadtext.reader.book
 
 import android.content.Context
 import android.util.Log
+import com.example.areadtext.reader.TextSegmenter
 import java.io.File
 
 /**

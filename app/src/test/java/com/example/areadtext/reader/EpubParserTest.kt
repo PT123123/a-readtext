@@ -1,5 +1,6 @@
 package com.example.areadtext.reader
 
+import com.example.areadtext.reader.book.EpubBookParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

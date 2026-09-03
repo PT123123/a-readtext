@@ -27,7 +27,6 @@
     <string name="transcribing_status">正在转写…</string>
     <string name="import_pending">音频已导入，下载模型后可在历史记录中转写</string>
     <string name="import_success">导入并转写完成</string>
-    <string name="import_failed">导入失败：%1$s</string>
     <string name="action_transcribe">转写</string>
     <string name="transcribe_no_model">请先下载识别模型</string>
     <string name="transcribe_failed">转写失败</string>

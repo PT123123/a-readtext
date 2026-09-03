@@ -1,5 +1,8 @@
 package com.example.areadtext.reader
 
+import com.example.areadtext.reader.book.Paragraph
+import com.example.areadtext.reader.book.Sentence
+
 /**
  * 文本分段器：把章节正文切成段、把段切成句，并保留各自在原文中的偏移。
  *

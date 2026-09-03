@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.areadtext"
-        minSdk 24
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
@@ -53,6 +53,12 @@ android {
         }
         resources {
             excludes += [
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*.SF",
+                "META-INF/*.DSA",
+                "META-INF/*.RSA",
                 "META-INF/LICENSE.md",
                 "META-INF/LICENSE-notice.md"
             ]
