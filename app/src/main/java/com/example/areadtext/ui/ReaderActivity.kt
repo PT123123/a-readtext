@@ -15,8 +15,8 @@ import com.example.areadtext.R
 import com.example.areadtext.data.AppDatabase
 import com.example.areadtext.data.ProgressEntity
 import com.example.areadtext.databinding.ActivityReaderBinding
-import com.example.areadtext.reader.EpubBook
-import com.example.areadtext.reader.EpubParser
+import com.example.areadtext.reader.book.Book
+import com.example.areadtext.reader.book.BookCache
 import com.example.areadtext.reader.ReaderPreferences
 import com.example.areadtext.reader.ReadState
 import com.example.areadtext.reader.TtsCommand
@@ -39,7 +39,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var binding: ActivityReaderBinding
     private lateinit var adapter: ParagraphAdapter
 
-    private var book: EpubBook? = null
+    private var book: Book? = null
     private var bookId: String = ""
     private var highlightJob: Job? = null
 
@@ -77,7 +77,7 @@ class ReaderActivity : AppCompatActivity() {
         TtsReadAloudService.start(this)
 
         lifecycleScope.launch {
-            val b = withContext(Dispatchers.IO) { EpubParser.loadCache(this@ReaderActivity, bookId) }
+            val b = withContext(Dispatchers.IO) { BookCache.load(this@ReaderActivity, bookId) }
             if (b == null) {
                 Toast.makeText(this@ReaderActivity, R.string.book_load_failed, Toast.LENGTH_SHORT).show()
                 finish()
