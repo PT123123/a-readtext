@@ -3,7 +3,7 @@ package com.example.areadtext.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/** 书架上的书（导入的本地 EPUB）。 */
+/** 书架上的书（导入的本地 EPUB / PDF / TXT / MD）。 */
 @Entity(tableName = "books")
 data class BookEntity(
     @PrimaryKey val bookId: String,
@@ -13,6 +13,8 @@ data class BookEntity(
     val coverPath: String? = null,
     val chapterCount: Int = 0,
     val addedAt: Long = System.currentTimeMillis(),
+    /** 原始格式：epub / pdf / txt / md */
+    val format: String = "epub",
 )
 
 /** 朗读进度（MoRealm/Lector 的"读到哪了"持久化，粒度到句）。 */

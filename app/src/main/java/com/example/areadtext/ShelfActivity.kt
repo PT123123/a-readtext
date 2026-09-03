@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -20,7 +19,9 @@ import com.example.areadtext.data.BookDao
 import com.example.areadtext.data.BookEntity
 import com.example.areadtext.databinding.ActivityShelfBinding
 import com.example.areadtext.databinding.ItemShelfBookBinding
-import com.example.areadtext.reader.EpubParser
+import com.example.areadtext.reader.book.Book
+import com.example.areadtext.reader.book.BookCache
+import com.example.areadtext.reader.book.ParserRegistry
 import com.example.areadtext.ui.ReaderActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,7 +30,7 @@ import java.io.File
 import java.util.UUID
 
 /**
- * 书架（启动页，legado 风格书架入口）：导入本地 EPUB → 解析缓存 → 打开阅读器。
+ * 书架（启动页，legado 风格书架入口）：导入本地图书（EPUB/PDF/TXT/MD）→ 解析缓存 → 打开阅读器。
  */
 class ShelfActivity : AppCompatActivity() {
 
@@ -59,7 +60,16 @@ class ShelfActivity : AppCompatActivity() {
         binding.shelfList.adapter = adapter
 
         binding.fabImport.setOnClickListener {
-            importLauncher.launch(arrayOf("application/epub", "application/octet-stream", "*/*"))
+            importLauncher.launch(
+                arrayOf(
+                    "application/epub+zip",
+                    "application/pdf",
+                    "text/plain",
+                    "text/markdown",
+                    "application/octet-stream",
+                    "*/*"
+                )
+            )
         }
 
         lifecycleScope.launch {
@@ -85,39 +95,52 @@ class ShelfActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     dao.deleteBook(book)
                     File(book.filePath).delete()
-                    EpubParser.cacheFile(this@ShelfActivity, book.bookId).delete()
+                    BookCache.file(this@ShelfActivity, book.bookId).delete()
                 }
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
-    /** 复制到私有目录 → 解析 → 写缓存 → 入库。 */
+    /** 复制到私有目录 → 按扩展名选解析器 → 解析 → 写缓存 → 入库。 */
     private fun importBook(uri: Uri) {
         lifecycleScope.launch {
             binding.fabImport.isEnabled = false
             try {
                 val imported = withContext(Dispatchers.IO) {
-                    val displayName = queryDisplayName(uri) ?: "book_${System.currentTimeMillis()}.epub"
+                    val displayName = queryDisplayName(uri) ?: "book_${System.currentTimeMillis()}"
                     val safeName = displayName.substringAfterLast('/').substringAfterLast('\\')
                         .replace(Regex("[^\\w\\u4e00-\\u9fa5.-]"), "_")
-                        .ifBlank { "book.epub" }
+                        .ifBlank { "book" }
+                    val ext = safeName.substringAfterLast('.', "").lowercase()
+
+                    // 校验扩展名是否受支持
+                    if (ext.isBlank() || !ParserRegistry.supportedExtensions().contains(ext)) {
+                        return@withContext null
+                    }
+
                     val booksDir = File(filesDir, "books").apply { if (!exists()) mkdirs() }
-                    val target = File(booksDir, if (safeName.endsWith(".epub", true)) safeName else "$safeName.epub")
+                    val target = File(booksDir, if (ext.isNotBlank()) "$safeName" else "$safeName.bin")
                     contentResolver.openInputStream(uri)?.use { input ->
                         target.outputStream().use { output -> input.copyTo(output) }
                     } ?: return@withContext null
 
-                    val bookId = "book_" + UUID.randomUUID().toString().substring(0, 8)
-                    val book = EpubParser.parse(target.absolutePath, bookId)
+                    // 按扩展名选解析器
+                    val parser = ParserRegistry.forFile(target)
                         ?: run { target.delete(); return@withContext null }
-                    EpubParser.saveCache(this@ShelfActivity, book)
-                    book
+
+                    val bookId = "book_" + UUID.randomUUID().toString().substring(0, 8)
+                    val book = parser.parse(target.absolutePath, bookId)
+                        ?: run { target.delete(); return@withContext null }
+                    parser.saveCache(this@ShelfActivity, book)
+                    book to ext
                 }
-                val book = imported ?: run {
-                    android.widget.Toast.makeText(this@ShelfActivity, R.string.import_epub_failed, android.widget.Toast.LENGTH_SHORT).show()
+
+                val (book, ext) = imported ?: run {
+                    android.widget.Toast.makeText(this@ShelfActivity, R.string.import_failed, android.widget.Toast.LENGTH_SHORT).show()
                     return@launch
                 }
+
                 dao.upsertBook(
                     BookEntity(
                         bookId = book.bookId,
@@ -125,12 +148,13 @@ class ShelfActivity : AppCompatActivity() {
                         author = book.author,
                         filePath = book.filePath,
                         chapterCount = book.totalChapters,
+                        format = ext,
                     )
                 )
-                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_epub_done, android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_done, android.widget.Toast.LENGTH_SHORT).show()
                 openBook(dao.getBook(book.bookId)!!)
             } catch (e: Exception) {
-                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_epub_failed, android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_failed, android.widget.Toast.LENGTH_SHORT).show()
             } finally {
                 binding.fabImport.isEnabled = true
             }
@@ -165,7 +189,7 @@ class ShelfActivity : AppCompatActivity() {
 }
 
 class ShelfAdapter(
-    private val onOpen: (BookEntity) -> Unit,
+    private val open: (BookEntity) -> Unit,
     private val onLongPress: (BookEntity) -> Unit,
 ) : RecyclerView.Adapter<ShelfAdapter.VH>() {
 
@@ -193,7 +217,7 @@ class ShelfAdapter(
             R.string.chapter_count, book.chapterCount
         )
         holder.cover.text = book.title.take(1)
-        holder.itemView.setOnClickListener { onOpen(book) }
+        holder.itemView.setOnClickListener { open(book) }
         holder.itemView.setOnLongClickListener { onLongPress(book); true }
     }
 

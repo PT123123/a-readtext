@@ -7,6 +7,9 @@ import android.media.AudioTrack
 import android.util.Log
 import com.example.areadtext.model.ModelCatalog
 import com.example.areadtext.model.ModelManager
+import com.example.areadtext.reader.book.BookCache
+import com.example.areadtext.reader.book.Chapter
+import com.example.areadtext.reader.book.Book
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +51,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
     private var engineModelKey: String = ""
 
     // ---- 朗读状态（唯一事实来源）----
-    private var book: EpubBook? = null
+    private var book: Book? = null
     private var chapterIndex = 0
     private var paragraphIndex = 0
     private var sentenceIndex = 0
@@ -116,7 +119,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
     }
 
     private suspend fun loadBook(cmd: TtsCommand.LoadBook) {
-        val b = EpubParser.loadCache(context, cmd.bookId) ?: run {
+        val b = BookCache.load(context, cmd.bookId) ?: run {
             TtsEventBus.update { it.copy(error = "书籍数据缺失，请重新导入") }
             return
         }
@@ -500,7 +503,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
     }
 
     /** 从当前段向前找下一个非空段；返回是否找到（不跨章）。 */
-    private fun advanceParagraph(chapter: EpubChapter, direction: Int): Boolean {
+    private fun advanceParagraph(chapter: Chapter, direction: Int): Boolean {
         var p = paragraphIndex + direction
         while (p in chapter.paragraphs.indices) {
             val para = chapter.paragraphs[p]
@@ -514,7 +517,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
     }
 
     /** 从当前段向后找上一个非空段。 */
-    private fun retreatParagraph(chapter: EpubChapter): Boolean {
+    private fun retreatParagraph(chapter: Chapter): Boolean {
         var p = paragraphIndex - 1
         while (p >= 0) {
             val para = chapter.paragraphs[p]
@@ -578,7 +581,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
 
     // ── 状态发布 ────────────────────────────────────────────────────────────
 
-    private fun currentChapter(): EpubChapter? = book?.chapters?.getOrNull(chapterIndex)
+    private fun currentChapter(): Chapter? = book?.chapters?.getOrNull(chapterIndex)
 
     private fun publishPosition(playing: Boolean) {
         val chapter = currentChapter()

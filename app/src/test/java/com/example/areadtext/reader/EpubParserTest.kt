@@ -9,7 +9,7 @@ import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class EpubParserTest {
+class EpubBookParserTest {
 
     @Test
     fun `解析最小 EPUB`() {
@@ -58,7 +58,7 @@ class EpubParserTest {
         }
 
         try {
-            val book = EpubParser.parse(epub.absolutePath, "test_book")
+            val book = EpubBookParser.parse(epub.absolutePath, "test_book")
             assertNotNull("应能解析出书", book)
             assertEquals("测试书", book!!.title)
             assertEquals("测试作者", book.author)
@@ -85,7 +85,7 @@ class EpubParserTest {
         val f = File(dir, "bad.epub")
         f.writeText("这不是一个 zip")
         try {
-            assertEquals(null, EpubParser.parse(f.absolutePath, "bad"))
+            assertEquals(null, EpubBookParser.parse(f.absolutePath, "bad"))
         } finally {
             f.delete(); dir.delete()
         }

@@ -1,4 +1,4 @@
-package com.example.areadtext.reader
+package com.example.areadtext.reader.book
 
 import android.content.Context
 import android.util.Log
@@ -12,25 +12,21 @@ import java.io.File
 import java.util.zip.ZipFile
 
 /**
- * EPUB 解析器：本地 .epub（ZIP 容器）→ [EpubBook]。
+ * EPUB 解析器：本地 .epub（ZIP 容器）→ [Book]。
  *
  * 流程：
  *  1. 读 META-INF/container.xml 定位 OPF（package）文档。
  *  2. 读 OPF 拿元数据（书名/作者）+ manifest + spine（阅读顺序）。
  *  3. 按 spine 顺序逐个解析 XHTML → 清洗为纯文本 → [TextSegmenter] 分段。
  *  4. 解析结果缓存为 JSON 到 filesDir，重复打开无需重排大书。
- *
- * 解析只保留阅读/朗读需要的结构（正文纯文本 + 段偏移），不追求完整排版还原，
- * 定位是"本地 EPUB 作为朗读内容源"（对标 MoRealm 的章节正文管线）。
  */
-object EpubParser {
+object EpubBookParser : BookParser {
 
-    private const val TAG = "EpubParser"
-    private const val CACHE_DIR = "epub_cache"
+    private const val TAG = "EpubBookParser"
+    private const val CACHE_DIR = "book_cache"
     private const val CACHE_VERSION = 1
 
-    /** 解析 .epub 文件。filePath 指向已复制到应用私有目录的 epub。 */
-    fun parse(filePath: String, bookId: String): EpubBook? {
+    override fun parse(filePath: String, bookId: String): Book? {
         return try {
             ZipFile(File(filePath)).use { zip ->
                 val opfPath = findOpfPath(zip) ?: run {
@@ -58,7 +54,7 @@ object EpubParser {
                 }
                 val baseDir = opfPath.substringBeforeLast('/').let { if (it == opfPath) "" else it }
 
-                val chapters = ArrayList<EpubChapter>()
+                val chapters = ArrayList<Chapter>()
                 spineItems.forEach { itemref ->
                     val idref = itemref.attr("idref")
                     val href = manifest[idref] ?: return@forEach
@@ -74,7 +70,7 @@ object EpubParser {
                     Log.w(TAG, "spine 中没有可读章节")
                     return null
                 }
-                EpubBook(
+                Book(
                     bookId = bookId,
                     title = title,
                     author = author,
@@ -88,18 +84,15 @@ object EpubParser {
         }
     }
 
-    /** 把单个 XHTML 清洗为章节文本 + 分段。 */
-    private fun htmlToChapter(entryPath: String, html: String): EpubChapter {
+    private fun htmlToChapter(entryPath: String, html: String): Chapter {
         val doc: Document = try {
             Jsoup.parse(html, "UTF-8")
         } catch (e: Exception) {
             Jsoup.parse("<body>${html}</body>")
         }
-        // 删除脚本/样式/注释等非正文
         doc.select("script, style, head, title, meta, link, noscript").remove()
         val body = doc.body() ?: doc
 
-        // 块级元素手动遍历（Jsoup.text() 会折叠换行导致分段失效，故手写）
         val normalized = buildPlainText(body)
             .replace(Regex("[ \\t\\u00a0]+"), " ")
             .replace(Regex("\\s*\n\\s*"), "\n")
@@ -111,7 +104,7 @@ object EpubParser {
                 ?: entryPath.substringAfterLast('/').removeSuffix(".html").removeSuffix(".xhtml")
                 ?: entryPath
         }
-        return EpubChapter(
+        return Chapter(
             id = entryPath,
             title = title,
             text = normalized,
@@ -124,7 +117,6 @@ object EpubParser {
         "tr", "section", "article", "table", "ul", "ol", "header", "footer", "figure",
     )
 
-    /** 遍历 body 子树，块级元素/br 处换行，输出保留段落结构的纯文本。 */
     private fun buildPlainText(root: Element): String {
         val sb = StringBuilder()
 
@@ -156,14 +148,12 @@ object EpubParser {
         return sb.toString()
     }
 
-    /** 读 container.xml 定位 OPF 路径。 */
     private fun findOpfPath(zip: ZipFile): String? {
         val container = zip.getEntry("META-INF/container.xml") ?: return null
         val doc = Jsoup.parse(zip.getInputStream(container), "UTF-8", "")
         return doc.select("rootfile").firstOrNull()?.attr("full-path")?.takeIf { it.isNotBlank() }
     }
 
-    /** href 相对 OPF 所在目录解析为 zip 内路径。 */
     private fun resolvePath(baseDir: String, href: String): String {
         val h = href.replace('\\', '/')
         return if (h.startsWith("/")) h.removePrefix("/")
@@ -175,85 +165,12 @@ object EpubParser {
         path.endsWith(".html", true) || path.endsWith(".xhtml", true) ||
             path.endsWith(".htm", true) || path.endsWith(".xml", true)
 
-    // ---- JSON 缓存（大书重开不重排）----
+    // ---- JSON 缓存（委托给通用 BookCache，所有格式同一位置/结构）----
 
-    fun cacheFile(context: Context, bookId: String): File {
-        val dir = File(context.filesDir, CACHE_DIR).apply { if (!exists()) mkdirs() }
-        return File(dir, "${bookId}_v$CACHE_VERSION.json")
-    }
+    override fun cacheFile(context: Context, bookId: String) = BookCache.file(context, bookId)
 
-    fun saveCache(context: Context, book: EpubBook) {
-        try {
-            val arr = JSONArray()
-            book.chapters.forEach { ch ->
-                val paras = JSONArray()
-                ch.paragraphs.forEach { p ->
-                    val sents = JSONArray()
-                    p.sentences.forEach { s -> sents.put(JSONObject().put("t", s.text).put("s", s.start)) }
-                    paras.put(JSONObject().put("t", p.text).put("o", p.offset).put("q", sents))
-                }
-                arr.put(
-                    JSONObject()
-                        .put("id", ch.id)
-                        .put("title", ch.title)
-                        .put("text", ch.text)
-                        .put("paras", paras)
-                )
-            }
-            val root = JSONObject()
-                .put("bookId", book.bookId)
-                .put("title", book.title)
-                .put("author", book.author)
-                .put("filePath", book.filePath)
-                .put("cover", book.coverPath)
-                .put("chapters", arr)
-            cacheFile(context, book.bookId).writeText(root.toString())
-        } catch (e: Exception) {
-            Log.w(TAG, "saveCache failed: ${e.message}")
-        }
-    }
+    override fun saveCache(context: Context, book: Book) = BookCache.save(context, book)
 
-    fun loadCache(context: Context, bookId: String): EpubBook? {
-        val f = cacheFile(context, bookId)
-        if (!f.exists()) return null
-        return try {
-            val root = JSONObject(f.readText())
-            val chaptersArr = root.getJSONArray("chapters")
-            val chapters = ArrayList<EpubChapter>(chaptersArr.length())
-            for (i in 0 until chaptersArr.length()) {
-                val c = chaptersArr.getJSONObject(i)
-                val parasArr = c.getJSONArray("paras")
-                val paras = ArrayList<Paragraph>(parasArr.length())
-                for (j in 0 until parasArr.length()) {
-                    val p = parasArr.getJSONObject(j)
-                    val qArr = p.optJSONArray("q") ?: JSONArray()
-                    val sents = ArrayList<Sentence>(qArr.length())
-                    for (k in 0 until qArr.length()) {
-                        val s = qArr.getJSONObject(k)
-                        sents.add(Sentence(text = s.getString("t"), start = s.getInt("s")))
-                    }
-                    paras.add(Paragraph(text = p.getString("t"), offset = p.getInt("o"), sentences = sents))
-                }
-                chapters.add(
-                    EpubChapter(
-                        id = c.getString("id"),
-                        title = c.optString("title", ""),
-                        text = c.getString("text"),
-                        paragraphs = paras,
-                    )
-                )
-            }
-            EpubBook(
-                bookId = root.getString("bookId"),
-                title = root.optString("title", ""),
-                author = root.optString("author", ""),
-                filePath = root.optString("filePath", ""),
-                coverPath = root.optString("cover", "").takeIf { it.isNotBlank() },
-                chapters = chapters,
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "loadCache failed: ${e.message}")
-            null
-        }
-    }
+    override fun loadCache(context: Context, bookId: String): Book? = BookCache.load(context, bookId)
+
 }

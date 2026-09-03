@@ -175,10 +175,11 @@
 
     <!-- 书架 / 阅读器 -->
     <string name="shelf_title">书架</string>
-    <string name="empty_shelf">书架还是空的\n点击右下角 + 导入一本本地 EPUB</string>
-    <string name="import_book">导入 EPUB</string>
-    <string name="import_epub_done">已导入</string>
-    <string name="import_epub_failed">导入失败，文件可能不是有效的 EPUB</string>
+    <string name="empty_shelf">书架还是空的\n点击右下角 + 导入本地图书（EPUB / PDF / TXT / MD）</string>
+    <string name="import_book">导入图书</string>
+    <string name="import_done">已导入</string>
+    <string name="import_failed">导入失败，文件可能损坏或格式不受支持</string>
+    <string name="import_unsupported">不支持的格式（支持 EPUB / PDF / TXT / MD）</string>
     <string name="delete_book_confirm">删除本书？本地文件与朗读进度将被移除</string>
     <string name="chapter_count">%1$d 章</string>
     <string name="model_manager">模型管理</string>

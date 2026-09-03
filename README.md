@@ -1,14 +1,14 @@
 # 朗读文本（ReadText / a-readtext）
 
-基于 Android + sherpa-onnx 的**离线 EPUB 朗读器**：导入本地 EPUB，以 legado 风格的阅读界面逐句朗读，
-**完全绕开系统 TTS 引擎**，用 sherpa-onnx 在设备本地合成语音（模型下载后全程离线）。
+基于 Android + sherpa-onnx 的**离线多格式图书朗读器**：导入本地 EPUB / PDF / TXT / Markdown，
+以 legado 风格的阅读界面逐句朗读，**完全绕开系统 TTS 引擎**，用 sherpa-onnx 在设备本地合成语音（模型下载后全程离线）。
 
-> 本项目的核心定位：**本地 EPUB 是内容源，离线合成是声音源**——不走 Android 系统 `TextToSpeech`
+> 本项目的核心定位：**本地图书是内容源，离线合成是声音源**——不走 Android 系统 `TextToSpeech`
 > 接口，而是把 TTS 引擎做成自己的第一公民（参考 HandyReader 的离线三引擎架构中离线路径）。
 
 ## 功能
 
-- 📚 **书架**：导入本地 EPUB → 解析 → 缓存 → 书籍列表（长按删除）
+- 📚 **书架**：导入本地 EPUB / PDF / TXT / MD → 解析 → 缓存 → 书籍列表（长按删除）
 - 📖 **阅读器**：legado 风格正文流，字号/行距/纸白/米黄/夜间主题
 - 🔊 **逐句离线朗读**：sherpa-onnx 本机合成（VITS / Matcha / Melo / Kokoro / Zipvoice / SuperTonic / Pocket）
 - 🧲 **逐句高亮 + 点句跳读**：当前朗读句高亮，点任意句子从此句开读
