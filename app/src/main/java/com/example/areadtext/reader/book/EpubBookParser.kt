@@ -3,6 +3,7 @@ package com.example.areadtext.reader.book
 import android.content.Context
 import android.util.Log
 import com.example.areadtext.reader.TextSegmenter
+import com.example.areadtext.reader.text.TextNormalizer
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -92,10 +93,17 @@ object EpubBookParser : BookParser {
             Jsoup.parse("<body>${html}</body>")
         }
         doc.select("script, style, head, title, meta, link, noscript").remove()
+        // 过滤 CSS 隐藏内容（display:none / visibility:hidden / hidden 属性）
+        // 避免把目录/注释/广告等隐藏元素提取到正文
+        doc.select(
+            "[style*=display\\:none],[style*=display: none]," +
+                "[style*=visibility\\:hidden],[style*=visibility: hidden]," +
+                "[hidden]"
+        ).remove()
         val body = doc.body() ?: doc
 
-        val normalized = buildPlainText(body)
-            .replace(Regex("[ \\t\\u00a0]+"), " ")
+        val normalized = TextNormalizer.normalize(buildPlainText(body))
+            .replace(Regex("[ \\t]+"), " ")
             .replace(Regex("\\s*\n\\s*"), "\n")
             .replace(Regex("\n{2,}"), "\n")
             .trim()
@@ -156,10 +164,11 @@ object EpubBookParser : BookParser {
     }
 
     private fun resolvePath(baseDir: String, href: String): String {
-        val h = href.replace('\\', '/')
-        return if (h.startsWith("/")) h.removePrefix("/")
-        else if (baseDir.isEmpty()) h
-        else "$baseDir/$h"
+        // 剥离 query string 和 fragment，避免 zip.getEntry 找不到
+        val clean = href.substringBefore('?').substringBefore('#').replace('\\', '/')
+        return if (clean.startsWith("/")) clean.removePrefix("/")
+        else if (baseDir.isEmpty()) clean
+        else "$baseDir/$clean"
     }
 
     private fun isHtml(path: String): Boolean =

@@ -178,6 +178,10 @@
     <string name="import_book">导入图书</string>
     <string name="import_done">已导入</string>
     <string name="import_failed">导入失败，文件可能损坏或格式不受支持</string>
+    <string name="import_failed_scanned">导入失败：该 PDF 为扫描版（图片），无法提取文字</string>
+    <string name="import_failed_low_quality">导入警告：PDF 文字提取质量较差，可能是扫描版或特殊编码</string>
+    <string name="import_failed_no_pages">导入失败：PDF 文件损坏或无页面</string>
+    <string name="import_failed_empty">导入失败：PDF 无文本内容</string>
     <string name="import_unsupported">不支持的格式（支持 EPUB / PDF / TXT / MD）</string>
     <string name="delete_book_confirm">删除本书？本地文件与朗读进度将被移除</string>
     <string name="chapter_count">%1$d 章</string>
@@ -189,6 +193,16 @@
     <string name="theme_paper">纸白主题</string>
     <string name="theme_sepia">米黄主题</string>
     <string name="theme_night">夜间主题</string>
+    <string name="theme_white">纯白</string>
+    <string name="theme_forest">护眼绿</string>
+    <string name="theme_ocean">深蓝</string>
+    <string name="theme_rose">樱粉</string>
+    <string name="theme_amber">琥珀夜</string>
+    <string name="font_size_label">字号</string>
+    <string name="line_spacing_label">行距</string>
+    <string name="theme_label">主题</string>
+    <string name="font_size_format">%1$d</string>
+    <string name="line_spacing_format">%1$.1f</string>
     <string name="model_manager_short">模型管理</string>
     <string name="prev_paragraph">上一段</string>
     <string name="next_paragraph">下一段</string>

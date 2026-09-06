@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -15,6 +16,7 @@ import com.example.areadtext.R
 import com.example.areadtext.data.AppDatabase
 import com.example.areadtext.data.ProgressEntity
 import com.example.areadtext.databinding.ActivityReaderBinding
+import com.example.areadtext.reader.ThemeCatalog
 import com.example.areadtext.reader.book.Book
 import com.example.areadtext.reader.book.BookCache
 import com.example.areadtext.reader.ReaderPreferences
@@ -226,15 +228,16 @@ class ReaderActivity : AppCompatActivity() {
     private fun applyTheme() {
         val font = ReaderPreferences.fontSp(this)
         val line = ReaderPreferences.lineSpacing(this)
-        val style = when (ReaderPreferences.theme(this)) {
-            ReaderPreferences.THEME_SEPIA -> ReaderStyle.sepia(font, line)
-            ReaderPreferences.THEME_NIGHT -> ReaderStyle.night(font, line)
-            else -> ReaderStyle.paper(font, line)
-        }
+        val themeId = ReaderPreferences.themeId(this)
+        val theme = ThemeCatalog.byId(themeId)
+        val style = ReaderStyle.fromTheme(theme, font, line)
         adapter.style = style
         adapter.notifyDataSetChanged()
         binding.root.setBackgroundColor(style.bgColor)
         binding.readingError.setTextColor(style.textColor)
+        // toolbar/TTS bar 跟随主题
+        binding.toolbar.setBackgroundColor(theme.surfaceColor)
+        binding.ttsBar.setBackgroundColor(theme.surfaceColor)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -253,31 +256,124 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun showReadingSettings() {
-        val menu = PopupMenu(this, binding.toolbar)
-        menu.menu.apply {
-            add(0, 1, 0, getString(R.string.font_inc))
-            add(0, 2, 0, getString(R.string.font_dec))
-            add(0, 3, 0, getString(R.string.theme_paper))
-            add(0, 4, 0, getString(R.string.theme_sepia))
-            add(0, 5, 0, getString(R.string.theme_night))
-            add(0, 6, 0, getString(R.string.model_manager_short))
-        }
-        menu.setOnMenuItemClickListener { it ->
-            when (it.itemId) {
-                1 -> { ReaderPreferences.setFontSp(this, ReaderPreferences.fontSp(this) + 1f); applyTheme(); true }
-                2 -> { ReaderPreferences.setFontSp(this, ReaderPreferences.fontSp(this) - 1f); applyTheme(); true }
-                3 -> { ReaderPreferences.setTheme(this, ReaderPreferences.THEME_PAPER); applyTheme(); true }
-                4 -> { ReaderPreferences.setTheme(this, ReaderPreferences.THEME_SEPIA); applyTheme(); true }
-                5 -> { ReaderPreferences.setTheme(this, ReaderPreferences.THEME_NIGHT); applyTheme(); true }
-                6 -> {
-                    startActivity(Intent(this, ModelManagerActivity::class.java))
-                    true
+        // 底部设置弹窗：主题色块 + 字号/行距滑块
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.sheet_reading_settings, null)
+        sheet.setContentView(view)
+
+        // 字号滑块
+        val sliderFont = view.findViewById<com.google.android.material.slider.Slider>(R.id.sliderFont)
+        val labelFont = view.findViewById<android.widget.TextView>(R.id.labelFont)
+        if (sliderFont != null) {
+            sliderFont.value = ReaderPreferences.fontSp(this)
+            sliderFont.valueFrom = 12f
+            sliderFont.valueTo = 32f
+            sliderFont.stepSize = 1f
+            labelFont?.text = getString(R.string.font_size_format, sliderFont.value.toInt())
+            sliderFont.addOnChangeListener { _, value, fromUser ->
+                if (fromUser) {
+                    ReaderPreferences.setFontSp(this, value)
+                    labelFont?.text = getString(R.string.font_size_format, value.toInt())
+                    applyTheme()
                 }
-                else -> false
             }
         }
-        menu.show()
+
+        // 行距滑块
+        val sliderLine = view.findViewById<com.google.android.material.slider.Slider>(R.id.sliderLine)
+        val labelLine = view.findViewById<android.widget.TextView>(R.id.labelLine)
+        if (sliderLine != null) {
+            sliderLine.value = ReaderPreferences.lineSpacing(this)
+            sliderLine.valueFrom = 1.0f
+            sliderLine.valueTo = 2.2f
+            sliderLine.stepSize = 0.1f
+            labelLine?.text = getString(R.string.line_spacing_format, sliderLine.value)
+            sliderLine.addOnChangeListener { _, value, fromUser ->
+                if (fromUser) {
+                    ReaderPreferences.setLineSpacing(this, value)
+                    labelLine?.text = getString(R.string.line_spacing_format, value)
+                    applyTheme()
+                }
+            }
+        }
+
+        // 主题色块网格
+        val themeGrid = view.findViewById<android.widget.LinearLayout>(R.id.themeGrid)
+        if (themeGrid != null) {
+            val currentThemeId = ReaderPreferences.themeId(this)
+            themeGrid.removeAllViews()
+            // 每行 4 个
+            val themes = ThemeCatalog.themes
+            val rowSize = 4
+            var rowLayout: android.widget.LinearLayout? = null
+            for ((index, theme) in themes.withIndex()) {
+                if (index % rowSize == 0) {
+                    rowLayout = android.widget.LinearLayout(this).apply {
+                        orientation = android.widget.LinearLayout.HORIZONTAL
+                        layoutParams = android.widget.LinearLayout.LayoutParams(
+                            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = dp(8) }
+                    }
+                    themeGrid.addView(rowLayout)
+                }
+                val swatch = createThemeSwatch(theme, theme.id == currentThemeId)
+                swatch.setOnClickListener {
+                    ReaderPreferences.setTheme(this, theme)
+                    applyTheme()
+                    sheet.dismiss()
+                }
+                rowLayout?.addView(swatch)
+            }
+        }
+
+        // 模型管理按钮
+        view.findViewById<android.widget.Button>(R.id.btnModelManager)?.setOnClickListener {
+            startActivity(Intent(this, ModelManagerActivity::class.java))
+            sheet.dismiss()
+        }
+
+        sheet.show()
     }
+
+    /** 创建主题色块 View。 */
+    private fun createThemeSwatch(theme: com.example.areadtext.reader.ReaderTheme, selected: Boolean): View {
+        val size = dp(44)
+        val container = android.widget.FrameLayout(this).apply {
+            layoutParams = android.view.ViewGroup.MarginLayoutParams(size, size).apply {
+                marginEnd = dp(8)
+            }
+        }
+
+        val circle = View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(theme.swatchColor)
+                setStroke(dp(2), if (selected) theme.accentColor else 0x33000000)
+            }
+            layoutParams = android.widget.FrameLayout.LayoutParams(size, size)
+        }
+        container.addView(circle)
+
+        if (selected) {
+            val check = android.widget.TextView(this).apply {
+                text = "✓"
+                textSize = 14f
+                gravity = android.view.Gravity.CENTER
+                setTextColor(if (theme.isDark) 0xFFFFFFFF.toInt() else theme.textColor)
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
+            container.addView(check)
+        }
+        return container
+    }
+
+    /** dp 转 px。 */
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+    private fun dp(v: Float): Float = v * resources.displayMetrics.density
 
     // ── 进度持久化 ──────────────────────────────────────────────────────────
 

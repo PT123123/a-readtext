@@ -34,6 +34,7 @@ data class Book(
     val filePath: String,
     val coverPath: String? = null,
     val chapters: List<Chapter>,
+    val isRtl: Boolean = false,  // RTL 文本（希伯来/阿拉伯）
 ) {
     val totalChapters: Int get() = chapters.size
 }
