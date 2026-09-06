@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.BackgroundColorSpan
+import android.text.style.LeadingMarginSpan
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -11,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.areadtext.databinding.ItemReaderParagraphBinding
+import com.example.areadtext.reader.ThemeCatalog
 import com.example.areadtext.reader.book.Paragraph
 
 /** 阅读器配色/排版样式（legado 风格的"背景-正文-高亮"三元组）。 */
@@ -21,25 +23,30 @@ data class ReaderStyle(
     val textColor: Int,
     val sentenceBg: Int,
     val currentParaBg: Int,
+    val accentColor: Int,
+    val secondaryTextColor: Int,
 ) {
     companion object {
-        fun paper(fontSp: Float, line: Float) = ReaderStyle(
-            fontSp, line,
-            Color.rgb(250, 246, 236), Color.rgb(46, 42, 38),
-            Color.rgb(255, 224, 130), Color.rgb(245, 238, 222),
+        fun fromTheme(theme: com.example.areadtext.reader.ReaderTheme, fontSp: Float, line: Float) = ReaderStyle(
+            fontSp = fontSp,
+            lineSpacingMult = line,
+            bgColor = theme.bgColor,
+            textColor = theme.textColor,
+            sentenceBg = theme.highlightColor,
+            currentParaBg = theme.paraHighlightColor,
+            accentColor = theme.accentColor,
+            secondaryTextColor = theme.secondaryTextColor,
         )
 
-        fun sepia(fontSp: Float, line: Float) = ReaderStyle(
-            fontSp, line,
-            Color.rgb(244, 236, 216), Color.rgb(91, 70, 54),
-            Color.rgb(217, 179, 108), Color.rgb(238, 227, 203),
-        )
+        // 向后兼容旧 API
+        fun paper(fontSp: Float, line: Float) =
+            fromTheme(ThemeCatalog.PAPER, fontSp, line)
 
-        fun night(fontSp: Float, line: Float) = ReaderStyle(
-            fontSp, line,
-            Color.rgb(18, 18, 18), Color.rgb(200, 200, 200),
-            Color.rgb(58, 58, 58), Color.rgb(32, 32, 32),
-        )
+        fun sepia(fontSp: Float, line: Float) =
+            fromTheme(ThemeCatalog.SEPIA, fontSp, line)
+
+        fun night(fontSp: Float, line: Float) =
+            fromTheme(ThemeCatalog.NIGHT, fontSp, line)
     }
 }
 
@@ -56,6 +63,9 @@ class ParagraphAdapter(
     var style: ReaderStyle = ReaderStyle.paper(19f, 1.5f)
     var highlightParagraph: Int = -1
     var highlightSentence: Int = -1
+
+    /** 首行缩进像素（2 个全角空格 ≈ 2 * fontSp）。 */
+    private var indentPx: Int = 0
 
     fun submit(newParagraphs: List<Paragraph>) {
         paragraphs = newParagraphs
@@ -80,6 +90,9 @@ class ParagraphAdapter(
         val isCurrentPara = position == highlightParagraph
         tv.setBackgroundColor(if (isCurrentPara) style.currentParaBg else Color.TRANSPARENT)
 
+        // 首行缩进（中文阅读习惯：2 字符）
+        indentPx = (style.fontSp * 2 * tv.resources.displayMetrics.scaledDensity).toInt()
+
         // 重要：不要给句子挂 ClickableSpan / LinkMovementMethod。
         // 联想平板（ZUI）上，带 ClickableSpan 的 SpannableString 在文本布局阶段
         // 会算出错误字形（正文只画出零星字母），setLayerType(SOFTWARE) 也拦不住
@@ -87,6 +100,13 @@ class ParagraphAdapter(
         // 因此"点句跳读"改为在 OnTouch 里用 Layout.getOffsetForHorizontal 反查
         // 点击坐标命中的句子，渲染路径与普通 TextView 完全一致，不可能触发该 bug。
         val ss = SpannableString(p.text)
+        // 首行缩进
+        if (indentPx > 0) {
+            ss.setSpan(
+                LeadingMarginSpan.Standard(indentPx, 0),
+                0, ss.length, Spanned.SPAN_INCLUSIVE_EXCLUSIVE
+            )
+        }
         val len = ss.length
         p.sentences.forEachIndexed { si, s ->
             val start = s.start.coerceIn(0, len)

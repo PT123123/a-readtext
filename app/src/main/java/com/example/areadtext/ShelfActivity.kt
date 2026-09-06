@@ -22,6 +22,7 @@ import com.example.areadtext.databinding.ItemShelfBookBinding
 import com.example.areadtext.reader.book.Book
 import com.example.areadtext.reader.book.BookCache
 import com.example.areadtext.reader.book.ParserRegistry
+import com.example.areadtext.reader.book.PdfBookParser
 import com.example.areadtext.ui.ReaderActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -137,7 +138,15 @@ class ShelfActivity : AppCompatActivity() {
                 }
 
                 val (book, ext) = imported ?: run {
-                    android.widget.Toast.makeText(this@ShelfActivity, R.string.import_failed, android.widget.Toast.LENGTH_SHORT).show()
+                    // 针对 PDF 解析失败给出更精确的提示
+                    val errorMsg = when (PdfBookParser.lastFailureReason) {
+                        "scanned" -> getString(R.string.import_failed_scanned)
+                        "low_quality" -> getString(R.string.import_failed_low_quality)
+                        "no_pages" -> getString(R.string.import_failed_no_pages)
+                        "empty" -> getString(R.string.import_failed_empty)
+                        else -> getString(R.string.import_failed)
+                    }
+                    android.widget.Toast.makeText(this@ShelfActivity, errorMsg, android.widget.Toast.LENGTH_LONG).show()
                     return@launch
                 }
 
@@ -211,20 +220,46 @@ class ShelfAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val book = books[position]
+        val ctx = holder.itemView.context
         holder.title.text = book.title
         holder.author.text = book.author.ifBlank { "" }
-        holder.count.text = holder.itemView.context.getString(
-            R.string.chapter_count, book.chapterCount
+        holder.count.text = ctx.getString(R.string.chapter_count, book.chapterCount)
+        // 封面显示前 2 个字符
+        holder.cover.text = book.title.take(2).ifBlank { "?" }
+        // 格式角标
+        holder.formatBadge.text = book.format.uppercase()
+        // 封面颜色：根据 bookId hash 选色（12 色调色板）
+        val palette = intArrayOf(
+            0xFF5C6BC0.toInt(), 0xFF26A69A.toInt(), 0xFFEF5350.toInt(), 0xFFFFCA28.toInt(),
+            0xFF7E57C2.toInt(), 0xFF26C6DA.toInt(), 0xFFEC407A.toInt(), 0xFF9CCC65.toInt(),
+            0xFFFF7043.toInt(), 0xFF42A5F5.toInt(), 0xFF8D6E63.toInt(), 0xFF78909C.toInt()
         )
-        holder.cover.text = book.title.take(1)
+        val colorIndex = Math.abs(book.bookId.hashCode()) % palette.size
+        holder.cover.setBackgroundColor(palette[colorIndex])
+        // 封面文字颜色：深色背景用白，浅色背景用深
+        val textColor = if (colorIndex in intArrayOf(0, 4, 7, 10)) 0xFFFFFFFF.toInt() else 0xFF333333.toInt()
+        holder.cover.setTextColor(textColor)
+
+        // 阅读进度（简化版：显示已读%）
+        val progress = daoProgress[book.bookId]
+        holder.progress.text = if (progress != null && book.chapterCount > 0) {
+            val pct = ((progress.coerceAtMost(book.chapterCount - 1) * 100) / book.chapterCount)
+            "$pct%"
+        } else { "" }
+
         holder.itemView.setOnClickListener { open(book) }
         holder.itemView.setOnLongClickListener { onLongPress(book); true }
     }
+
+    /** 进度缓存（避免每个绑定都查询 DB）。 */
+    private val daoProgress = HashMap<String, Int>()
 
     class VH(binding: ItemShelfBookBinding) : RecyclerView.ViewHolder(binding.root) {
         val cover: TextView = binding.cover
         val title: TextView = binding.title
         val author: TextView = binding.author
         val count: TextView = binding.count
+        val formatBadge: TextView = binding.formatBadge
+        val progress: TextView = binding.progress
     }
 }

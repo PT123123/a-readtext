@@ -13,9 +13,12 @@ object ReaderPreferences {
     private const val KEY_SPEED = "speed"
     private const val KEY_SID = "sid"
 
-    const val THEME_PAPER = 0
-    const val THEME_SEPIA = 1
-    const val THEME_NIGHT = 2
+    // 旧主题 int → 新 theme id 迁移映射
+    private val LEGACY_THEME_MAP = mapOf(
+        0 to "paper",
+        1 to "sepia",
+        2 to "night",
+    )
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -32,11 +35,44 @@ object ReaderPreferences {
     fun setLineSpacing(context: Context, v: Float) =
         prefs(context).edit().putFloat(KEY_LINE_SPACING, v.coerceIn(1.0f, 2.2f)).apply()
 
-    fun theme(context: Context): Int =
-        prefs(context).getInt(KEY_THEME, THEME_PAPER)
+    /**
+     * 获取当前主题 id。
+     * 自动迁移旧版 int 主题到新版 String id（首次读取时）。
+     */
+    fun themeId(context: Context): String {
+        val p = prefs(context)
+        // 新版：直接读 String
+        val str = p.getString(KEY_THEME, null)
+        if (str != null) return str
 
-    fun setTheme(context: Context, t: Int) =
-        prefs(context).edit().putInt(KEY_THEME, t).apply()
+        // 旧版：读 int，迁移
+        if (p.contains(KEY_THEME + "_int")) {
+            val legacy = p.getInt(KEY_THEME + "_int", 0)
+            val id = LEGACY_THEME_MAP[legacy] ?: "paper"
+            // 写入新版
+            p.edit().putString(KEY_THEME, id).remove(KEY_THEME + "_int").apply()
+            return id
+        }
+
+        // 默认
+        return "paper"
+    }
+
+    /** 向后兼容：旧代码 getInt 主题（返回 int，仅内部用）。 */
+    @Suppress("unused")
+    private fun themeInt(context: Context): Int = when (themeId(context)) {
+        "paper" -> 0
+        "sepia" -> 1
+        "night" -> 2
+        else -> 0
+    }
+
+    fun setTheme(context: Context, themeId: String) =
+        prefs(context).edit().putString(KEY_THEME, themeId).apply()
+
+    /** 直接设置主题（接受 [ReaderTheme]）。 */
+    fun setTheme(context: Context, theme: ReaderTheme) =
+        prefs(context).edit().putString(KEY_THEME, theme.id).apply()
 
     fun speed(context: Context): Float =
         prefs(context).getFloat(KEY_SPEED, 1f).coerceIn(0.3f, 4f)

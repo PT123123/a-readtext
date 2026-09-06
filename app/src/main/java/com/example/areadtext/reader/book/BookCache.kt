@@ -48,6 +48,7 @@ object BookCache {
                 .put("author", book.author)
                 .put("filePath", book.filePath)
                 .put("cover", book.coverPath)
+                .put("rtl", book.isRtl)
                 .put("chapters", arr)
             file(context, book.bookId).writeText(root.toString())
         } catch (e: Exception) {
@@ -92,6 +93,7 @@ object BookCache {
                 filePath = root.optString("filePath", ""),
                 coverPath = root.optString("cover", "").takeIf { it.isNotBlank() },
                 chapters = chapters,
+                isRtl = root.optBoolean("rtl", false),
             )
         } catch (e: Exception) {
             Log.w(TAG, "load failed: ${e.message}")

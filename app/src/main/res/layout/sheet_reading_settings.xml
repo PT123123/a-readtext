@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/reading_settings"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 字号 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:text="@string/font_size_label"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderFont"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:valueFrom="12.0"
+            android:valueTo="32.0"
+            android:stepSize="1.0"
+            android:value="19.0" />
+
+        <TextView
+            android:id="@+id/labelFont"
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:gravity="end"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="19" />
+    </LinearLayout>
+
+    <!-- 行距 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:text="@string/line_spacing_label"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderLine"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:valueFrom="1.0"
+            android:valueTo="2.2"
+            android:stepSize="0.1"
+            android:value="1.5" />
+
+        <TextView
+            android:id="@+id/labelLine"
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:gravity="end"
+            android:textColor="?android:attr/textColorSecondary"
+            android:text="1.5" />
+    </LinearLayout>
+
+    <!-- 主题选择 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/theme_label"
+        android:textSize="14sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <LinearLayout
+        android:id="@+id/themeGrid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <!-- 模型管理按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnModelManager"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/model_manager_short" />
+
+</LinearLayout>
