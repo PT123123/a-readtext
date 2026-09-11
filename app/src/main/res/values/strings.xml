@@ -174,8 +174,9 @@
 
     <!-- 书架 / 阅读器 -->
     <string name="shelf_title">书架</string>
-    <string name="empty_shelf">书架还是空的\n点击右下角 + 导入本地图书（EPUB / PDF / TXT / MD）</string>
-    <string name="import_book">导入图书</string>
+    <string name="empty_shelf">书架还是空的\n导入本地图书（EPUB / PDF / TXT / MD），即可离线逐句朗读</string>
+    <string name="import_book">打开文件</string>
+    <string name="now_playing">正在朗读</string>
     <string name="import_done">已导入</string>
     <string name="import_failed">导入失败，文件可能损坏或格式不受支持</string>
     <string name="import_failed_scanned">导入失败：该 PDF 为扫描版（图片），无法提取文字</string>

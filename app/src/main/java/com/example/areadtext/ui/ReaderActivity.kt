@@ -158,11 +158,17 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateTtsBar(state: ReadState) {
         binding.btnPlayPause.setImageResource(
-            if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+            if (state.isPlaying) R.drawable.ic_pause_white else R.drawable.ic_play_white
         )
         binding.btnPlayPause.contentDescription =
             getString(if (state.isPlaying) R.string.pause else R.string.play)
         binding.speedLabel.text = "×${formatSpeed(state.speed)}"
+        // 当前句音频时间（NaturalReader 式 mm:ss 进度）
+        binding.timeLabel.text = if (state.sentenceAudioTotalMs > 0) {
+            "${formatTime(state.sentenceAudioMs)} / ${formatTime(state.sentenceAudioTotalMs)}"
+        } else {
+            ""
+        }
         // 逐句进度（FolioReader 式音频时间 → 句内进度条）
         val total = state.sentenceAudioTotalMs
         if (total > 0) {
@@ -175,6 +181,13 @@ class ReaderActivity : AppCompatActivity() {
         }
         binding.readingError.text = state.error
         binding.readingError.isVisible = state.error != null
+    }
+
+    private fun formatTime(ms: Long): String {
+        val totalSeconds = (ms / 1000).coerceAtLeast(0)
+        val m = totalSeconds / 60
+        val s = totalSeconds % 60
+        return if (m > 0) "$m:${s.toString().padStart(2, '0')}" else "0:$s"
     }
 
     private fun formatSpeed(s: Float): String =
@@ -238,6 +251,8 @@ class ReaderActivity : AppCompatActivity() {
         // toolbar/TTS bar 跟随主题
         binding.toolbar.setBackgroundColor(theme.surfaceColor)
         binding.ttsBar.setBackgroundColor(theme.surfaceColor)
+        // 状态栏跟随阅读主题（T2S 式沉浸）
+        window.statusBarColor = theme.surfaceColor
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

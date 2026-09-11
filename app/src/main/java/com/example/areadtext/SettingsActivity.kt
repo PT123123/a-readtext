@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
+import com.example.areadtext.databinding.ActivitySettingsBinding
 import com.example.areadtext.utils.StorageUtils
 
 /**
@@ -17,9 +18,15 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = getString(R.string.settings_title)
+
         supportFragmentManager
             .beginTransaction()
-            .replace(android.R.id.content, SettingsFragment())
+            .replace(binding.content.id, SettingsFragment())
             .commit()
     }
 
@@ -170,22 +177,22 @@ class SettingsActivity : AppCompatActivity() {
         private fun showAboutDialog() {
             val context = requireContext()
             val aboutText = """
-                |实时语音转写应用
+                |离线图书朗读器（ReadText）
                 |
-                |基于sherpa-onnx流式Paraformer引擎实现离线语音识别功能。
+                |导入本地 EPUB / PDF / TXT / MD 图书，基于 sherpa-onnx 在设备本地
+                |合成语音逐句朗读，全程离线，不依赖系统 TTS 引擎。
                 |
                 |主要特性:
-                |• 实时语音转写
-                |• 离线工作
-                |• 中英双语支持
-                |• 模型自定义
-                |• 历史记录管理
+                |• 书架 + 多格式导入
+                |• 逐句高亮离线朗读
+                |• 语速调节 / 阅读主题
+                |• 断点续读 / 通知栏控制
+                |• 多 TTS 模型管理
                 |
                 |技术架构:
-                |• AudioRecord音频采集
-                |• sherpa-onnx ASR引擎
-                |• Room数据库
-                |• WorkManager后台任务
+                |• sherpa-onnx 离线 TTS
+                |• Room 数据库
+                |• 前台朗读服务
             """.trimMargin("|")
 
             androidx.appcompat.app.AlertDialog.Builder(context)
