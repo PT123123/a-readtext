@@ -87,6 +87,17 @@ class ReaderActivity : AppCompatActivity() {
             }
             book = b
             binding.toolbarTitle.text = b.title
+            // 修复竞态：TtsEventBus 状态可能先于 book 加载完成到达，此时 updateToolbar()
+            // 已把 loadedChapter 设为当前章节但 book 为 null，adapter 仍为空。
+            // book 加载完后主动提交当前章节段落，确保正文总能渲染。
+            val snap = TtsEventBus.snapshot()
+            if (snap.totalChapters > 0 && snap.bookId == bookId) {
+                val ch = b.chapters.getOrNull(snap.chapterIndex)
+                if (ch != null) {
+                    loadedChapter = snap.chapterIndex
+                    adapter.submit(ch.paragraphs)
+                }
+            }
             // 仅当服务里不是这本书时才重新 LoadBook（避免打断正在进行的朗读/复位进度）
             if (TtsEventBus.snapshot().bookId != bookId) {
                 TtsEventBus.send(
@@ -248,9 +259,17 @@ class ReaderActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
         binding.root.setBackgroundColor(style.bgColor)
         binding.readingError.setTextColor(style.textColor)
+        // toolbar 文字跟随主题（surface 上的对比色）
+        binding.toolbarTitle.setTextColor(theme.onSurfaceColor)
+        binding.chapterTitle.setTextColor(theme.secondaryTextColor)
+        binding.chapterCounter.setTextColor(theme.secondaryTextColor)
+        binding.toolbar.setTitleTextColor(theme.onSurfaceColor)
         // toolbar/TTS bar 跟随主题
         binding.toolbar.setBackgroundColor(theme.surfaceColor)
         binding.ttsBar.setBackgroundColor(theme.surfaceColor)
+        // ttsBar 内文字颜色
+        binding.speedLabel.setTextColor(theme.onSurfaceColor)
+        binding.timeLabel.setTextColor(theme.secondaryTextColor)
         // 状态栏跟随阅读主题（T2S 式沉浸）
         window.statusBarColor = theme.surfaceColor
     }
