@@ -19,10 +19,13 @@ import com.example.areadtext.data.BookDao
 import com.example.areadtext.data.BookEntity
 import com.example.areadtext.databinding.ActivityShelfBinding
 import com.example.areadtext.databinding.ItemShelfBookBinding
+import com.example.areadtext.reader.TtsCommand
+import com.example.areadtext.reader.TtsEventBus
 import com.example.areadtext.reader.book.Book
 import com.example.areadtext.reader.book.BookCache
 import com.example.areadtext.reader.book.ParserRegistry
 import com.example.areadtext.reader.book.PdfBookParser
+import com.example.areadtext.service.TtsReadAloudService
 import com.example.areadtext.ui.ReaderActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,11 +75,66 @@ class ShelfActivity : AppCompatActivity() {
                 )
             )
         }
+        binding.btnEmptyImport.setOnClickListener {
+            importLauncher.launch(
+                arrayOf(
+                    "application/epub+zip",
+                    "application/pdf",
+                    "text/plain",
+                    "text/markdown",
+                    "application/octet-stream",
+                    "*/*"
+                )
+            )
+        }
+
+        setupNowPlaying()
 
         lifecycleScope.launch {
             dao.observeBooks().collect { books ->
                 adapter.submit(books)
                 binding.emptyHint.isVisible = books.isEmpty()
+            }
+        }
+    }
+
+    /** 正在朗读横幅：跟随朗读总线状态，点击回到阅读器 / 暂停 / 停止。 */
+    private fun setupNowPlaying() {
+        val card = binding.nowPlayingCard
+        binding.btnNowPlayingToggle.setOnClickListener {
+            val s = TtsEventBus.snapshot()
+            if (s.isLoaded) {
+                TtsEventBus.send(if (s.isPlaying) TtsCommand.Pause else TtsCommand.Resume)
+            }
+        }
+        binding.btnNowPlayingStop.setOnClickListener {
+            TtsEventBus.send(TtsCommand.StopService)
+            TtsReadAloudService.stop(this)
+            card.isVisible = false
+        }
+        card.setOnClickListener {
+            val s = TtsEventBus.snapshot()
+            if (s.bookId.isNotBlank()) {
+                lifecycleScope.launch {
+                    dao.getBook(s.bookId)?.let { book ->
+                        openBook(book)
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            TtsEventBus.state.collect { s ->
+                // 仅"正在播放"时显示横幅：暂停/停止后回到书架保持极简（T2S 风格）
+                if (!s.isPlaying || s.bookId.isBlank()) {
+                    card.isVisible = false
+                    return@collect
+                }
+                binding.nowPlayingTitle.text = s.bookTitle
+                binding.nowPlayingSubtitle.text =
+                    if (s.chapterTitle.isNotBlank()) s.chapterTitle else getString(R.string.now_playing)
+                binding.btnNowPlayingToggle.setImageResource(R.drawable.ic_pause)
+                binding.btnNowPlayingToggle.contentDescription = getString(R.string.pause)
+                card.isVisible = true
             }
         }
     }
