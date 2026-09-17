@@ -7,6 +7,10 @@ local.properties
 *.apk
 *.aab
 *.ap_
+# Release signing keystore (NEVER commit — back it up outside the repo)
+*.p12
+*.jks
+keystore.properties
 
 # IDE
 .idea/
