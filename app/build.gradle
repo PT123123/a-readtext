@@ -4,9 +4,19 @@ plugins {
     id 'com.google.devtools.ksp' version '2.0.21-1.0.27'
 }
 
+// Release signing — only applied when keystore.properties + release.p12 exist locally.
+// Absent those, a bare clone still builds debug / runs tests without a signing key.
+def keystorePropFile = rootProject.file('keystore.properties')
+def hasReleaseSigning = keystorePropFile.exists()
+def releaseSigningProps = new Properties()
+if (hasReleaseSigning) { keystorePropFile.withInputStream { releaseSigningProps.load(it) } }
+
 android {
     namespace 'com.example.areadtext'
     compileSdk 34
+    // Pin an installed NDK — AGP 8.1.4's default (r23) is not on this machine, and
+    // the ndk{abiFilters} block below needs an NDK present to resolve ABIs.
+    ndkVersion "26.1.10909125"
 
     defaultConfig {
         applicationId "com.example.areadtext"
@@ -23,10 +33,22 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile rootProject.file(releaseSigningProps['storeFile'])
+                storePassword releaseSigningProps['storePassword']
+                keyAlias releaseSigningProps['keyAlias']
+                keyPassword releaseSigningProps['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) { signingConfig signingConfigs.release }
         }
     }
 
