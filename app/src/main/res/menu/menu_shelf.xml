@@ -7,6 +7,10 @@
         android:title="@string/settings"
         app:showAsAction="always" />
     <item
+        android:id="@+id/action_add_text"
+        android:title="@string/shelf_add_text"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_models"
         android:title="@string/model_manager"
         app:showAsAction="never" />

@@ -68,6 +68,8 @@ class ReaderActivity : AppCompatActivity() {
         adapter = ParagraphAdapter(onSentenceTap = { pi, si ->
             if (TtsEventBus.snapshot().isLoaded) {
                 TtsEventBus.send(TtsCommand.JumpTo(pi, si))
+            } else {
+                Toast.makeText(this, R.string.book_not_ready, Toast.LENGTH_SHORT).show()
             }
         })
         binding.readerList.layoutManager = LinearLayoutManager(this)
@@ -143,6 +145,11 @@ class ReaderActivity : AppCompatActivity() {
             val ch = book?.chapters?.getOrNull(state.chapterIndex)
             if (ch != null && adapter.itemCount != ch.paragraphs.size) {
                 adapter.submit(ch.paragraphs)
+                // 新章节的段/句下标与旧章节无关，先清高亮等 updateHighlight 重设
+                adapter.highlightParagraph = -1
+                adapter.highlightSentence = -1
+                lastHighlightParagraph = -1
+                lastHighlightSentence = -1
             }
         }
         binding.chapterTitle.text = state.chapterTitle.ifBlank { "" }
@@ -159,6 +166,8 @@ class ReaderActivity : AppCompatActivity() {
         val prevP = lastHighlightParagraph
         lastHighlightParagraph = p
         lastHighlightSentence = s
+        adapter.highlightParagraph = p
+        adapter.highlightSentence = s
         if (prevP in 0 until adapter.itemCount) adapter.notifyItemChanged(prevP)
         if (p in 0 until adapter.itemCount) adapter.notifyItemChanged(p)
         if (state.isPlaying && p in 0 until adapter.itemCount) {
@@ -367,7 +376,41 @@ class ReaderActivity : AppCompatActivity() {
             sheet.dismiss()
         }
 
+        // 音色按钮（同模型多说话人；单音色模型给出提示）
+        view.findViewById<android.widget.Button>(R.id.btnVoice)?.apply {
+            val st = TtsEventBus.snapshot()
+            text = if (st.modelName.isNotBlank() && st.numSpeakers > 1) {
+                "${context.getString(R.string.voice_label)}: 音色 ${st.sid + 1}/${st.numSpeakers}"
+            } else {
+                context.getString(R.string.voice_label)
+            }
+            setOnClickListener { showVoiceMenu(this, sheet) }
+        }
+
         sheet.show()
+    }
+
+    private fun showVoiceMenu(anchor: View, sheet: com.google.android.material.bottomsheet.BottomSheetDialog) {
+        val st = TtsEventBus.snapshot()
+        if (st.modelName.isBlank()) {
+            Toast.makeText(this, R.string.voice_model_not_ready, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (st.numSpeakers <= 1) {
+            Toast.makeText(this, R.string.voice_only_one, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val menu = PopupMenu(this, anchor)
+        for (i in 0 until st.numSpeakers) {
+            menu.menu.add(0, i, i, "音色 ${i + 1}" + if (i == st.sid) "  ✓" else "")
+        }
+        menu.setOnMenuItemClickListener { item ->
+            ReaderPreferences.setSid(this, item.itemId)
+            TtsEventBus.send(TtsCommand.SetSid(item.itemId))
+            sheet.dismiss()
+            true
+        }
+        menu.show()
     }
 
     /** 创建主题色块 View。 */

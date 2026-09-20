@@ -108,8 +108,8 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
 
             <ImageButton
                 android:id="@+id/btnPrevParagraph"
@@ -123,15 +123,17 @@
                 android:id="@+id/btnPrevSentence"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
+                android:layout_marginStart="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/prev_sentence"
                 android:src="@drawable/ic_prev_sentence" />
 
+            <!-- 主操作：播放/暂停，居中放大 -->
             <ImageButton
                 android:id="@+id/btnPlayPause"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_marginHorizontal="4dp"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:layout_marginHorizontal="6dp"
                 android:background="@drawable/bg_play_circle"
                 android:contentDescription="@string/play"
                 android:elevation="2dp"
@@ -141,6 +143,7 @@
                 android:id="@+id/btnNextSentence"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
+                android:layout_marginEnd="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/next_sentence"
                 android:src="@drawable/ic_next_sentence" />
@@ -164,8 +167,8 @@
                 android:layout_height="wrap_content"
                 android:paddingEnd="8dp"
                 android:text="0:00 / 0:00"
-                android:textSize="12sp"
-                android:textColor="?android:attr/textColorSecondary" />
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/speedLabel"
@@ -173,7 +176,9 @@
                 android:layout_height="wrap_content"
                 android:paddingEnd="4dp"
                 android:text="×1.0"
-                android:textSize="13sp" />
+                android:textColor="?attr/colorPrimary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <ImageButton
                 android:id="@+id/btnSpeed"

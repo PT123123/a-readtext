@@ -32,12 +32,24 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
     val modelType: ModelType? get() = type
     val isReady: Boolean get() = tts != null
 
-    /** 初始化：扫描目录 → 构建配置 → 实例化原生引擎。失败返回 false。 */
+    /** 最近一次 init/synthesize 失败的具体原因，成功时为 null，供 UI 直接展示。 */
+    var lastError: String? = null
+        private set
+
+    /** 初始化：扫描目录 → 构建配置 → 实例化原生引擎。失败返回 false，原因见 [lastError]。 */
     fun init(): Boolean {
         release()
+        lastError = null
         return try {
+            if (!modelDir.isDirectory) {
+                lastError = "模型目录不存在: ${modelDir.absolutePath}"
+                return false
+            }
             val files = modelDir.walkTopDown().filter { it.isFile }.toList()
-            if (files.isEmpty()) return false
+            if (files.isEmpty()) {
+                lastError = "模型目录为空: ${modelDir.absolutePath}"
+                return false
+            }
             val cfg = buildConfig(files) ?: return false
             tts = OfflineTts(assetManager = null, config = cfg)
             type = detectType(files)
@@ -45,6 +57,13 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
             true
         } catch (e: Exception) {
             Log.e(TAG, "init failed: ${e.message}", e)
+            lastError = lastError
+                ?: "原生引擎初始化失败（模型族: ${type ?: "未识别"}）: ${describe(e)}\n目录: ${modelDir.absolutePath}"
+            release()
+            false
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "native library load failed", e)
+            lastError = "sherpa-onnx 原生库加载失败（SO 库缺失或与设备 ABI 不兼容）: ${e.message}"
             release()
             false
         }
@@ -52,9 +71,15 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
 
     fun sampleRate(): Int = tts?.sampleRate() ?: 0
 
-    /** 合成一句：返回音频样本 + 时长；失败返回 null。speed 在合成期生效（sherpa 原生支持）。 */
+    /** 模型支持的说话人数（vits/kokoro 等多音色模型 >1；单音色或引擎未就绪返回 1）。 */
+    fun numSpeakers(): Int = (tts?.numSpeakers() ?: 0).coerceAtLeast(1)
+
+    /** 合成一句：返回音频样本 + 时长；失败返回 null，原因见 [lastError]。speed 在合成期生效（sherpa 原生支持）。 */
     fun synthesize(text: String, speed: Float, sid: Int = 0): SynthesizedAudio? {
-        val engine = tts ?: return null
+        val engine = tts ?: run {
+            if (lastError == null) lastError = "引擎尚未初始化（init 未成功或已被释放）"
+            return null
+        }
         return try {
             val audio: GeneratedAudio = engine.generate(text, sid = sid, speed = speed.coerceIn(0.3f, 4f))
             val sr = audio.sampleRate
@@ -62,6 +87,7 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
             SynthesizedAudio(samples = audio.samples, sampleRate = sr, durationMs = durationMs, text = text)
         } catch (e: Exception) {
             Log.e(TAG, "synthesize failed: ${e.message}", e)
+            lastError = "合成「${text.take(24)}…」失败: ${describe(e)}"
             null
         }
     }
@@ -88,12 +114,28 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
     }
 
     private fun buildConfig(files: List<File>): OfflineTtsConfig? {
-        val tokens = files.firstOrNull { it.name.equals("tokens.txt", true) }?.absolutePath ?: return null
-        val type = detectType(files) ?: return null
-        this.type = type
+        val listing = files.take(20).joinToString(", ") { it.name } +
+            if (files.size > 20) "…（共 ${files.size} 个文件）" else ""
 
-        fun firstOrNull(vararg prefixes: String): String? =
+        fun need(typeName: String, vararg prefixes: String): String? =
             files.firstOrNull { f -> prefixes.any { f.name.startsWith(it, true) } }?.absolutePath
+                ?: run {
+                    lastError = "识别为 $typeName 模型，但缺少「${prefixes.joinToString(" / ")}」开头的文件" +
+                        "\n目录内文件: $listing\n目录: ${modelDir.absolutePath}"
+                    null
+                }
+
+        val tokens = files.firstOrNull { it.name.equals("tokens.txt", true) }?.absolutePath
+            ?: run {
+                lastError = "目录中未找到 tokens.txt，不是有效的 sherpa-onnx TTS 模型" +
+                    "\n目录内文件: $listing\n目录: ${modelDir.absolutePath}"
+                return null
+            }
+        val type = detectType(files) ?: run {
+            lastError = "无法识别模型族（目录内文件: $listing）"
+            return null
+        }
+        this.type = type
 
         val threads = Runtime.getRuntime().availableProcessors().coerceIn(1, 4)
         val model = OfflineTtsModelConfig(
@@ -106,55 +148,58 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
             ModelType.ZIPVOICE -> {
                 model.zipvoice = OfflineTtsZipVoiceModelConfig(
                     tokens = tokens,
-                    encoder = firstOrNull("encoder", "encoder-epoch") ?: return null,
-                    decoder = firstOrNull("decoder", "decoder-epoch") ?: return null,
-                    vocoder = firstOrNull("vocoder", "vocoder-epoch") ?: return null,
+                    encoder = need("ZIPVOICE", "encoder", "encoder-epoch") ?: return null,
+                    decoder = need("ZIPVOICE", "decoder", "decoder-epoch") ?: return null,
+                    vocoder = need("ZIPVOICE", "vocoder", "vocoder-epoch") ?: return null,
                 )
             }
             ModelType.MATCHA -> {
                 model.matcha = OfflineTtsMatchaModelConfig(
-                    acousticModel = firstOrNull("acoustic_model", "acoustic-model") ?: return null,
-                    vocoder = firstOrNull("vocoder", "vocoder-epoch") ?: return null,
-                    lexicon = firstOrNull("lexicon.txt") ?: "",
+                    acousticModel = need("MATCHA", "acoustic_model", "acoustic-model") ?: return null,
+                    vocoder = need("MATCHA", "vocoder", "vocoder-epoch") ?: return null,
+                    lexicon = files.firstOrNull { it.name.startsWith("lexicon.txt", true) }?.absolutePath ?: "",
                     tokens = tokens,
                     dataDir = modelDir.absolutePath,
                 )
             }
             ModelType.KOKORO -> {
                 model.kokoro = OfflineTtsKokoroModelConfig(
-                    model = firstOrNull("model") ?: return null,
-                    voices = firstOrNull("voices.bin", "voices") ?: "",
+                    model = need("KOKORO", "model") ?: return null,
+                    voices = files.firstOrNull { f ->
+                        f.name.equals("voices.bin", true) || f.name.endsWith("_voices.bin", true) ||
+                            f.name.contains("voices", true)
+                    }?.absolutePath ?: "",
                     tokens = tokens,
                     dataDir = modelDir.absolutePath,
-                    lexicon = firstOrNull("lexicon.txt") ?: "",
+                    lexicon = files.firstOrNull { it.name.startsWith("lexicon.txt", true) }?.absolutePath ?: "",
                 )
             }
             ModelType.POCKET -> {
                 model.pocket = OfflineTtsPocketModelConfig(
-                    lmFlow = firstOrNull("lm_flow", "lm-flow") ?: "",
-                    lmMain = firstOrNull("lm_main", "lm-main") ?: "",
-                    encoder = firstOrNull("encoder", "encoder-epoch") ?: "",
-                    decoder = firstOrNull("decoder", "decoder-epoch") ?: "",
-                    textConditioner = firstOrNull("text_conditioner", "text-conditioner") ?: "",
-                    vocabJson = firstOrNull("vocab.json") ?: "",
-                    tokenScoresJson = firstOrNull("token_scores.json") ?: "",
+                    lmFlow = files.firstOrNull { it.name.startsWith("lm_flow", true) || it.name.startsWith("lm-flow", true) }?.absolutePath ?: "",
+                    lmMain = files.firstOrNull { it.name.startsWith("lm_main", true) || it.name.startsWith("lm-main", true) }?.absolutePath ?: "",
+                    encoder = files.firstOrNull { it.name.startsWith("encoder", true) }?.absolutePath ?: "",
+                    decoder = files.firstOrNull { it.name.startsWith("decoder", true) }?.absolutePath ?: "",
+                    textConditioner = files.firstOrNull { it.name.startsWith("text_conditioner", true) || it.name.startsWith("text-conditioner", true) }?.absolutePath ?: "",
+                    vocabJson = files.firstOrNull { it.name.equals("vocab.json", true) }?.absolutePath ?: "",
+                    tokenScoresJson = files.firstOrNull { it.name.equals("token_scores.json", true) }?.absolutePath ?: "",
                 )
             }
             ModelType.SUPERTONIC -> {
                 model.supertonic = OfflineTtsSupertonicModelConfig(
-                    durationPredictor = firstOrNull("duration_predictor", "duration-predictor") ?: "",
-                    textEncoder = firstOrNull("text_encoder", "text-encoder") ?: "",
-                    vectorEstimator = firstOrNull("vector_estimator", "vector-estimator") ?: "",
-                    vocoder = firstOrNull("vocoder", "vocoder-epoch") ?: "",
-                    ttsJson = firstOrNull("tts.json") ?: "",
-                    unicodeIndexer = firstOrNull("unicode_indexer", "unicode-indexer") ?: "",
-                    voiceStyle = firstOrNull("voice_style", "voice-style") ?: "",
+                    durationPredictor = files.firstOrNull { it.name.startsWith("duration_predictor", true) || it.name.startsWith("duration-predictor", true) }?.absolutePath ?: "",
+                    textEncoder = files.firstOrNull { it.name.startsWith("text_encoder", true) || it.name.startsWith("text-encoder", true) }?.absolutePath ?: "",
+                    vectorEstimator = files.firstOrNull { it.name.startsWith("vector_estimator", true) || it.name.startsWith("vector-estimator", true) }?.absolutePath ?: "",
+                    vocoder = files.firstOrNull { it.name.startsWith("vocoder", true) }?.absolutePath ?: "",
+                    ttsJson = files.firstOrNull { it.name.equals("tts.json", true) }?.absolutePath ?: "",
+                    unicodeIndexer = files.firstOrNull { it.name.startsWith("unicode_indexer", true) || it.name.startsWith("unicode-indexer", true) }?.absolutePath ?: "",
+                    voiceStyle = files.firstOrNull { it.name.startsWith("voice_style", true) || it.name.startsWith("voice-style", true) }?.absolutePath ?: "",
                 )
             }
             else -> { // VITS（含 melo / piper）
                 model.vits = OfflineTtsVitsModelConfig(
-                    model = firstOrNull("model") ?: return null,
-                    lexicon = firstOrNull("lexicon.txt") ?: "",
+                    model = need("VITS", "model") ?: return null,
+                    lexicon = files.firstOrNull { it.name.startsWith("lexicon.txt", true) }?.absolutePath ?: "",
                     tokens = tokens,
                     dataDir = modelDir.absolutePath,
                 )
@@ -169,32 +214,37 @@ class OfflineTtsEngine(private val modelDir: File, private val modelId: String) 
         )
     }
 
-    /** 最终校验：真正构造一次原生引擎（模型文件错误/损坏会抛异常 → false）。 */
-    fun isValid(): Boolean {
-        return try {
-            if (!init()) false else { release(); true }
-        } catch (e: Exception) {
-            Log.w(TAG, "model load test failed: ${e.message}")
-            false
-        }
+    /** 异常 → "类名: message（根因 类名: message）" 一行式描述。 */
+    private fun describe(e: Throwable): String {
+        val root = generateSequence(e.cause) { it.cause }.lastOrNull() ?: e
+        return if (root === e) "${e.javaClass.simpleName}: ${e.message}"
+        else "${e.javaClass.simpleName}: ${e.message}（根因 ${root.javaClass.simpleName}: ${root.message}）"
     }
 
     companion object {
         private const val TAG = "OfflineTtsEngine"
 
-        /** 模型目录是否可被离线 TTS 使用（供 ModelManager 校验）。 */
-        fun isModelValid(dir: File): Boolean {
+        /**
+         * 真正构造一次原生引擎校验模型目录：可用返回 null，
+         * 否则返回具体失败原因（缺哪个文件 / 原生异常信息），供下载与切换模型时展示。
+         */
+        fun validateReason(dir: File): String? {
             return try {
-                val files = dir.walkTopDown().filter { it.isFile }.toList()
-                if (files.isEmpty()) return false
-                if (!files.any { it.name.equals("tokens.txt", true) }) return false
                 val engine = OfflineTtsEngine(dir, "validate")
-                engine.isValid()
+                if (engine.init()) {
+                    engine.release()
+                    null
+                } else {
+                    engine.lastError ?: "模型加载测试失败（未知原因），目录: ${dir.absolutePath}"
+                }
             } catch (e: Exception) {
-                Log.w(TAG, "isModelValid failed: ${e.message}")
-                false
+                Log.w(TAG, "validateReason failed: ${e.message}", e)
+                "模型校验异常 ${e.javaClass.simpleName}: ${e.message}"
             }
         }
+
+        /** 模型目录是否可被离线 TTS 使用（供 ModelManager 校验）。 */
+        fun isModelValid(dir: File): Boolean = validateReason(dir) == null
     }
 }
 

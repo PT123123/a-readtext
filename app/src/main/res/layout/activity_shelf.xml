@@ -24,7 +24,7 @@
             android:clipToPadding="false"
             android:padding="12dp" />
 
-        <!-- 空状态：T2S 式“开屏即用” -->
+        <!-- 空状态：开屏即用，双入口（导入图书 / 输入文字） -->
         <LinearLayout
             android:id="@+id/emptyHint"
             android:layout_width="match_parent"
@@ -48,24 +48,42 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:gravity="center"
+                android:lineSpacingExtra="3dp"
                 android:text="@string/empty_shelf"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="15sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEmptyImport"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:paddingStart="28dp"
-                android:paddingEnd="28dp"
-                android:text="@string/import_book"
-                app:icon="@drawable/ic_add"
-                app:iconGravity="textStart" />
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEmptyImport"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/import_book_short"
+                    app:icon="@drawable/ic_add"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEmptyAddText"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/shelf_add_text" />
+            </LinearLayout>
         </LinearLayout>
     </FrameLayout>
 
-    <!-- 正在朗读横幅（NaturalReader “Read as you go” / T2S 后台续读） -->
+    <!-- 正在朗读横幅（常驻后台续读：书名 + 章节 + 暂停/停止） -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/nowPlayingCard"
         android:layout_width="match_parent"
@@ -78,6 +96,8 @@
         app:cardBackgroundColor="?attr/colorSurface"
         app:cardCornerRadius="16dp"
         app:cardElevation="3dp"
+        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeWidth="1dp"
         android:visibility="gone">
 
         <LinearLayout
@@ -90,9 +110,18 @@
             android:paddingEnd="8dp"
             android:paddingBottom="10dp">
 
+            <!-- 朗读图标 -->
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/now_playing"
+                android:src="@drawable/ic_reader"
+                app:tint="?attr/colorPrimary" />
+
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -102,9 +131,9 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="?android:attr/textColorPrimary" />
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/nowPlayingSubtitle"
@@ -112,8 +141,8 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:textSize="12sp"
-                    android:textColor="?android:attr/textColorSecondary" />
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <ImageButton

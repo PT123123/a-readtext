@@ -4,16 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="6dp"
+    android:clipToOutline="true"
+    app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="10dp"
-    app:cardElevation="3dp"
-    app:cardBackgroundColor="?attr/colorSurface">
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- 封面（带格式角标）-->
+        <!-- 封面（带格式角标 + 底部阅读进度条）-->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="150dp">
@@ -27,6 +28,18 @@
                 android:textColor="#6B6252"
                 android:textSize="36sp"
                 android:textStyle="bold" />
+
+            <!-- 阅读进度条：贴在封面底部，白底半透明 -->
+            <ProgressBar
+                android:id="@+id/coverProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_gravity="bottom"
+                android:max="100"
+                android:progressBackgroundTint="#33FFFFFF"
+                android:progressTint="#CCFFFFFF"
+                android:visibility="invisible" />
 
             <!-- 格式角标 -->
             <TextView
@@ -58,40 +71,40 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="2"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="?android:attr/textColorPrimary" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/author"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textSize="11sp"
                 android:textColor="?android:attr/textColorSecondary"
-                android:layout_marginTop="2dp" />
+                android:textSize="11sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/count"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textSize="10sp"
-                    android:textColor="?android:attr/textColorTertiary" />
+                    android:textColor="?android:attr/textColorTertiary"
+                    android:textSize="10sp" />
 
                 <TextView
                     android:id="@+id/progress"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
-                    android:textColor="?attr/colorPrimary" />
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

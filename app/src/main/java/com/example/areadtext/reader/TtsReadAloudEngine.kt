@@ -56,6 +56,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
     private var paragraphIndex = 0
     private var sentenceIndex = 0
     private var speed = 1f
+    private var sid = 0
     private var sleepMinutes = 0
 
     /** FolioReader 式运行时音频↔文本时间轴。 */
@@ -112,6 +113,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
             TtsCommand.PrevChapter -> switchChapter(-1)
             is TtsCommand.JumpTo -> jumpTo(cmd.paragraphIndex, cmd.sentenceIndex)
             is TtsCommand.SetSpeed -> setSpeed(cmd.speed)
+            is TtsCommand.SetSid -> setSid(cmd.sid)
             is TtsCommand.SetModel -> setModel(cmd.modelId)
             is TtsCommand.SetSleep -> setSleep(cmd.minutes)
             TtsCommand.StopService -> stop()
@@ -127,6 +129,8 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
         chapterIndex = cmd.chapterIndex.coerceIn(0, (b.totalChapters - 1).coerceAtLeast(0))
         paragraphIndex = cmd.paragraphIndex
         sentenceIndex = cmd.sentenceIndex
+        speed = ReaderPreferences.speed(context)
+        sid = ReaderPreferences.sid(context)
         currentAudio = null
         currentAudioStartFrame = 0
         timeline.clear()
@@ -139,6 +143,7 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
                 chapterTitle = chapter?.title ?: "",
                 chapterIndex = chapterIndex,
                 totalChapters = b.totalChapters,
+                speed = speed,
                 isPlaying = false,
             )
         }
@@ -150,7 +155,10 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
             controlMutex.withLock {
                 if (book == null) return@withLock
                 if (!ensureEngine()) {
-                    TtsEventBus.update { it.copy(isPlaying = false, error = "TTS 模型未就绪") }
+                    // ensureEngine 已发布详细错误，这里只补一个兜底并确保停止播放
+                    TtsEventBus.update { st ->
+                        st.copy(isPlaying = false, error = st.error ?: "TTS 模型未就绪")
+                    }
                     return@withLock
                 }
                 if (TtsEventBus.snapshot().isPlaying && speakJob?.isActive == true) return@withLock
@@ -287,15 +295,61 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
         }
     }
 
+    private fun setSid(newSid: Int) {
+        scope.launch {
+            controlMutex.withLock {
+                val engine = offlineEngine
+                if (engine == null) {
+                    TtsEventBus.update {
+                        it.copy(error = "切换音色失败：TTS 模型尚未加载，请先在「模型管理」启用一个模型并播放一次")
+                    }
+                    return@withLock
+                }
+                val n = engine.numSpeakers()
+                if (newSid !in 0 until n) {
+                    TtsEventBus.update {
+                        it.copy(
+                            numSpeakers = n,
+                            error = if (n <= 1) "当前模型只有 1 个音色，想换音色请在「模型管理」切换模型"
+                            else "当前模型只有 $n 个音色，没有「音色 ${newSid + 1}」",
+                        )
+                    }
+                    return@withLock
+                }
+                if (newSid == sid) return@withLock
+                sid = newSid
+                resetSentencePlayback() // 换音色必须重新合成
+                TtsEventBus.update { it.copy(sid = newSid, numSpeakers = n, error = null) }
+                restartOrPublish()
+            }
+        }
+    }
+
     private fun setModel(modelId: String) {
         scope.launch {
             controlMutex.withLock {
+                val info = ModelCatalog.findById(context, modelId)
+                if (info == null) {
+                    TtsEventBus.update {
+                        it.copy(error = "切换模型失败：模型目录中不存在 id=$modelId（可能已被删除），当前继续使用原模型")
+                    }
+                    return@withLock
+                }
+                if (!ModelManager.isInstalled(context, info)) {
+                    TtsEventBus.update {
+                        it.copy(error = "切换「${info.name}」失败：该模型尚未下载完成或未安装成功，请在模型管理中重新下载后再切换")
+                    }
+                    return@withLock
+                }
                 ModelManager.setActiveModel(context, modelId)
                 engineModelKey = ""
                 offlineEngine?.release()
                 offlineEngine = null
                 resetSentencePlayback()
-                ensureEngine()
+                if (!ensureEngine() && TtsEventBus.snapshot().isPlaying) {
+                    // 新模型加载失败，ensureEngine 已给出详细原因并停止播放
+                    return@withLock
+                }
                 if (TtsEventBus.snapshot().isPlaying) {
                     speakJob?.cancelAndJoin()
                     speakJob = scope.launch { speakLoop() }
@@ -364,12 +418,19 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
             } else {
                 val engine = offlineEngine
                 if (engine == null) {
-                    TtsEventBus.update { it.copy(error = "TTS 引擎未就绪", isPlaying = false) }
+                    TtsEventBus.update {
+                        it.copy(error = "TTS 引擎未就绪：模型未加载成功，请检查模型管理中当前模型的状态", isPlaying = false)
+                    }
                     return
                 }
-                val syn = engine.synthesize(sentence.text, speed)
+                val syn = engine.synthesize(sentence.text, speed, sid)
                 if (syn == null) {
-                    TtsEventBus.update { it.copy(error = "句子合成失败，跳过", isPlaying = false) }
+                    TtsEventBus.update {
+                        it.copy(
+                            error = "本句合成失败，朗读已暂停。\n${engine.lastError ?: "未知错误（模型可能与文本语言不匹配）"}",
+                            isPlaying = false
+                        )
+                    }
                     return
                 }
                 currentAudio = syn
@@ -554,28 +615,47 @@ class TtsReadAloudEngine(private val context: Context) : CoroutineScope {
 
     private fun ensureEngine(): Boolean {
         val dir = ModelManager.getInstalledDirectory(context)
+        val activeId = ModelManager.getActiveModelId(context)
+        val activeName = activeId?.let { ModelCatalog.findById(context, it)?.name }
         if (dir == null) {
             offlineEngine?.release()
             offlineEngine = null
-            TtsEventBus.update { it.copy(error = "未启用 TTS 模型：请在模型管理中下载并启用", isPlaying = false) }
+            engineModelKey = ""
+            TtsEventBus.update {
+                it.copy(
+                    error = if (activeId == null)
+                        "未启用任何 TTS 模型：请在「模型管理」中下载并启用一个模型"
+                    else
+                        "当前模型「${activeName ?: activeId}」未处于已安装状态：下载未完成或安装文件已被删除，请到模型管理中重新下载",
+                    isPlaying = false
+                )
+            }
             return false
         }
         val key = dir.absolutePath
         if (offlineEngine != null && engineModelKey == key) return true
         offlineEngine?.release()
-        val engine = OfflineTtsEngine(dir, ModelManager.getActiveModelId(context) ?: "model")
+        val engine = OfflineTtsEngine(dir, activeId ?: "model")
         if (!engine.init()) {
             offlineEngine = null
             engineModelKey = ""
-            TtsEventBus.update { it.copy(error = "模型加载失败，请检查模型完整性") }
+            TtsEventBus.update {
+                it.copy(
+                    error = "模型「${activeName ?: activeId ?: dir.name}」加载失败：\n${engine.lastError ?: "未知错误"}",
+                    isPlaying = false
+                )
+            }
             return false
         }
         offlineEngine = engine
         engineModelKey = key
-        val name = ModelManager.getActiveModelId(context)
-            ?.let { ModelCatalog.findById(context, it)?.name }
-            ?: "离线 TTS"
-        TtsEventBus.update { it.copy(modelName = name, error = null) }
+        val name = activeName ?: "离线 TTS"
+        val n = engine.numSpeakers()
+        if (sid >= n) sid = 0 // 换模型后音色序号可能越界（如新模型只有一个音色）
+        ReaderPreferences.setSid(context, sid)
+        TtsEventBus.update {
+            it.copy(modelName = name, numSpeakers = n, sid = sid, error = null)
+        }
         return true
     }
 

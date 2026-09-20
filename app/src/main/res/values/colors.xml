@@ -29,4 +29,18 @@
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_hint">#9E9E9E</color>
+
+    <!-- 下载失败错误面板 -->
+    <color name="error_container">#FDECEA</color>
+    <color name="on_error_container">#B3261E</color>
+    <color name="error_container_stroke">#F2C4BE</color>
+
+    <!-- 模型状态芯片 -->
+    <color name="chip_installed">#388E3C</color>
+    <color name="chip_downloading">#1976D2</color>
+    <color name="chip_verifying">#1976D2</color>
+    <color name="chip_failed">#D32F2F</color>
+    <color name="chip_paused">#F57C00</color>
+    <color name="chip_queued">#757575</color>
+    <color name="chip_not_installed">#607D8B</color>
 </resources>

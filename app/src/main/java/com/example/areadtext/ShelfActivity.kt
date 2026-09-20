@@ -3,9 +3,15 @@ package com.example.areadtext
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -25,6 +31,7 @@ import com.example.areadtext.reader.book.Book
 import com.example.areadtext.reader.book.BookCache
 import com.example.areadtext.reader.book.ParserRegistry
 import com.example.areadtext.reader.book.PdfBookParser
+import com.example.areadtext.reader.book.TxtBookParser
 import com.example.areadtext.service.TtsReadAloudService
 import com.example.areadtext.ui.ReaderActivity
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +94,7 @@ class ShelfActivity : AppCompatActivity() {
                 )
             )
         }
+        binding.btnEmptyAddText.setOnClickListener { showAddTextDialog() }
 
         setupNowPlaying()
 
@@ -196,12 +204,14 @@ class ShelfActivity : AppCompatActivity() {
                 }
 
                 val (book, ext) = imported ?: run {
-                    // 针对 PDF 解析失败给出更精确的提示
-                    val errorMsg = when (PdfBookParser.lastFailureReason) {
-                        "scanned" -> getString(R.string.import_failed_scanned)
-                        "low_quality" -> getString(R.string.import_failed_low_quality)
-                        "no_pages" -> getString(R.string.import_failed_no_pages)
-                        "empty" -> getString(R.string.import_failed_empty)
+                    // 针对具体格式给出更精确的失败提示
+                    val errorMsg = when {
+                        TxtBookParser.lastFailureReason == "too_large" ->
+                            getString(R.string.import_failed_too_large)
+                        PdfBookParser.lastFailureReason == "scanned" -> getString(R.string.import_failed_scanned)
+                        PdfBookParser.lastFailureReason == "low_quality" -> getString(R.string.import_failed_low_quality)
+                        PdfBookParser.lastFailureReason == "no_pages" -> getString(R.string.import_failed_no_pages)
+                        PdfBookParser.lastFailureReason == "empty" -> getString(R.string.import_failed_empty)
                         else -> getString(R.string.import_failed)
                     }
                     android.widget.Toast.makeText(this@ShelfActivity, errorMsg, android.widget.Toast.LENGTH_LONG).show()
@@ -228,6 +238,95 @@ class ShelfActivity : AppCompatActivity() {
         }
     }
 
+    /** "输入 / 粘贴文字"对话框：自建标题 + 正文，走与 TXT 文件相同的解析入库管线。 */
+    private fun showAddTextDialog() {
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+        }
+        val etTitle = EditText(this).apply {
+            hint = getString(R.string.add_text_hint_title)
+            isSingleLine = true
+            textSize = 15f
+        }
+        val etBody = EditText(this).apply {
+            hint = getString(R.string.add_text_hint_content)
+            gravity = Gravity.TOP or Gravity.START
+            minLines = 6
+            maxLines = 14
+            textSize = 15f
+        }
+        layout.addView(etTitle)
+        layout.addView(etBody)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.add_text_title)
+            .setView(ScrollView(this).apply { addView(layout) })
+            .setPositiveButton(R.string.add_text_save) { _, _ ->
+                addTextBook(etTitle.text.toString().trim(), etBody.text.toString())
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * 把用户输入 / 粘贴的文字落成私有目录下的 .txt 文件，再用 [TxtBookParser]
+     * 流式解析（自动切章 + 超长章节切割）入库并打开阅读器。
+     */
+    private fun addTextBook(title: String, content: String) {
+        if (content.isBlank()) {
+            android.widget.Toast.makeText(this, R.string.add_text_empty, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (content.length * 3L > 32L * 1024 * 1024) {
+            android.widget.Toast.makeText(this, R.string.add_text_too_large, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        val firstLine = content.trim().lineSequence().firstOrNull { it.isNotBlank() }
+            ?.trim()?.take(12) ?: ""
+        val displayTitle = title.ifBlank { firstLine }.ifBlank { "我的文字" }
+
+        lifecycleScope.launch {
+            binding.fabImport.isEnabled = false
+            try {
+                val book = withContext(Dispatchers.IO) {
+                    val booksDir = File(filesDir, "books").apply { if (!exists()) mkdirs() }
+                    val target = File(booksDir, "text_${System.currentTimeMillis()}.txt")
+                    target.writeText(content)
+                    val bookId = "book_" + UUID.randomUUID().toString().substring(0, 8)
+                    val parsed = TxtBookParser.parse(target.absolutePath, bookId)
+                        ?: run { target.delete(); null }
+                    parsed?.copy(title = displayTitle)?.also {
+                        TxtBookParser.saveCache(this@ShelfActivity, it)
+                    }
+                } ?: run {
+                    val errorMsg = if (TxtBookParser.lastFailureReason == "too_large")
+                        getString(R.string.import_failed_too_large) else getString(R.string.import_failed)
+                    android.widget.Toast.makeText(
+                        this@ShelfActivity, errorMsg, android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    return@launch
+                }
+                dao.upsertBook(
+                    BookEntity(
+                        bookId = book.bookId,
+                        title = book.title,
+                        author = "",
+                        filePath = book.filePath,
+                        chapterCount = book.totalChapters,
+                        format = "txt",
+                    )
+                )
+                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_done, android.widget.Toast.LENGTH_SHORT).show()
+                openBook(dao.getBook(book.bookId)!!)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this@ShelfActivity, R.string.import_failed, android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.fabImport.isEnabled = true
+            }
+        }
+    }
+
     private fun queryDisplayName(uri: Uri): String? = try {
         contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
@@ -242,6 +341,10 @@ class ShelfActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_add_text -> {
+                showAddTextDialog()
+                true
+            }
             R.id.action_models -> {
                 startActivity(Intent(this, ModelManagerActivity::class.java))
                 true
@@ -298,12 +401,14 @@ class ShelfAdapter(
         val textColor = if (colorIndex in intArrayOf(0, 4, 7, 10)) 0xFFFFFFFF.toInt() else 0xFF333333.toInt()
         holder.cover.setTextColor(textColor)
 
-        // 阅读进度（简化版：显示已读%）
+        // 阅读进度（简化版：显示已读% + 封面底部进度条）
         val progress = daoProgress[book.bookId]
-        holder.progress.text = if (progress != null && book.chapterCount > 0) {
-            val pct = ((progress.coerceAtMost(book.chapterCount - 1) * 100) / book.chapterCount)
-            "$pct%"
-        } else { "" }
+        val pct = if (progress != null && book.chapterCount > 0) {
+            ((progress.coerceAtMost(book.chapterCount - 1) * 100) / book.chapterCount)
+        } else { 0 }
+        holder.progress.text = if (pct > 0) "$pct%" else ""
+        holder.coverProgress.progress = pct
+        holder.coverProgress.visibility = if (pct > 0) View.VISIBLE else View.INVISIBLE
 
         holder.itemView.setOnClickListener { open(book) }
         holder.itemView.setOnLongClickListener { onLongPress(book); true }
@@ -314,6 +419,7 @@ class ShelfAdapter(
 
     class VH(binding: ItemShelfBookBinding) : RecyclerView.ViewHolder(binding.root) {
         val cover: TextView = binding.cover
+        val coverProgress: ProgressBar = binding.coverProgress
         val title: TextView = binding.title
         val author: TextView = binding.author
         val count: TextView = binding.count

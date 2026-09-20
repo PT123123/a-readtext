@@ -25,6 +25,10 @@ data class ModelState(
     val progressPercent: Int = 0,
     val downloadedBytes: Long = 0,
     val error: String? = null,
+    /** 人话三层摘要（普通用户优先看） */
+    val errorHuman: String? = null,
+    /** 错误分类码（UI 决定补救按钮，见 ModelDownloadWorker.CLASS_*） */
+    val errorClass: String? = null,
     val isActive: Boolean = false
 ) {
     val isInstalled: Boolean get() = status == ModelInstallStatus.INSTALLED
@@ -195,6 +199,8 @@ object ModelManager {
             progressPercent = work?.progress?.getInt(ModelDownloadWorker.KEY_PROGRESS, 0) ?: 0,
             downloadedBytes = work?.progress?.getLong(ModelDownloadWorker.KEY_DOWNLOADED_BYTES, 0L) ?: 0,
             error = work?.outputData?.getString(ModelDownloadWorker.KEY_ERROR),
+            errorHuman = work?.outputData?.getString(ModelDownloadWorker.KEY_ERROR_HUMAN),
+            errorClass = work?.outputData?.getString(ModelDownloadWorker.KEY_ERROR_CLASS),
             isActive = info.id == activeId
         )
     }
