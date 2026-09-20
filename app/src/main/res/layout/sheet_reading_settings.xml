@@ -102,13 +102,26 @@
         android:layout_height="wrap_content"
         android:orientation="vertical" />
 
-    <!-- 模型管理按钮 -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnModelManager"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content"
+    <!-- 音色 / 模型管理 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/model_manager_short" />
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoice"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_label" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnModelManager"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/model_manager_short" />
+    </LinearLayout>
 
 </LinearLayout>

@@ -1,16 +1,22 @@
 package com.example.areadtext.reader.book
 
 import android.content.Context
+import android.util.JsonReader
 import android.util.Log
-import org.json.JSONArray
-import org.json.JSONObject
+import java.io.BufferedWriter
 import java.io.File
+import java.io.FileReader
+import java.io.FileWriter
 
 /**
  * 跨格式的通用图书缓存读写。
  *
  * 所有 [BookParser] 都把同一 JSON 结构写到 book_cache/<bookId>/book_vN.json，
  * 因此阅读器加载缓存时无需关心原格式——TTS 调度主机直接调 [loadCache] 即可。
+ *
+ * 大书内存优化：save/load 均为流式（逐段写入 / JsonReader 逐 token 解析），
+ * 不再构造整本巨型 JSONObject 树，导入与打开千万字 TXT 时峰值内存与单章同量级。
+ * JSON 结构与旧版 org.json 实现完全兼容。
  */
 object BookCache {
 
@@ -26,31 +32,52 @@ object BookCache {
 
     fun save(context: Context, book: Book) {
         try {
-            val arr = JSONArray()
-            book.chapters.forEach { ch ->
-                val paras = JSONArray()
-                ch.paragraphs.forEach { p ->
-                    val sents = JSONArray()
-                    p.sentences.forEach { s -> sents.put(JSONObject().put("t", s.text).put("s", s.start)) }
-                    paras.put(JSONObject().put("t", p.text).put("o", p.offset).put("q", sents))
+            BufferedWriter(FileWriter(file(context, book.bookId)), 64 * 1024).use { w ->
+                w.write("{\"bookId\":")
+                w.write(jsonString(book.bookId))
+                w.write(",\"title\":")
+                w.write(jsonString(book.title))
+                w.write(",\"author\":")
+                w.write(jsonString(book.author))
+                w.write(",\"filePath\":")
+                w.write(jsonString(book.filePath))
+                book.coverPath?.let {
+                    w.write(",\"cover\":")
+                    w.write(jsonString(it))
                 }
-                arr.put(
-                    JSONObject()
-                        .put("id", ch.id)
-                        .put("title", ch.title)
-                        .put("text", ch.text)
-                        .put("paras", paras)
-                )
+                w.write(",\"rtl\":")
+                w.write(if (book.isRtl) "true" else "false")
+                w.write(",\"chapters\":[")
+                book.chapters.forEachIndexed { ci, ch ->
+                    if (ci > 0) w.write(",")
+                    w.write("{\"id\":")
+                    w.write(jsonString(ch.id))
+                    w.write(",\"title\":")
+                    w.write(jsonString(ch.title))
+                    w.write(",\"text\":")
+                    w.write(jsonString(ch.text))
+                    w.write(",\"paras\":[")
+                    ch.paragraphs.forEachIndexed { pi, p ->
+                        if (pi > 0) w.write(",")
+                        w.write("{\"t\":")
+                        w.write(jsonString(p.text))
+                        w.write(",\"o\":")
+                        w.write(p.offset.toString())
+                        w.write(",\"q\":[")
+                        p.sentences.forEachIndexed { si, s ->
+                            if (si > 0) w.write(",")
+                            w.write("{\"t\":")
+                            w.write(jsonString(s.text))
+                            w.write(",\"s\":")
+                            w.write(s.start.toString())
+                            w.write("}")
+                        }
+                        w.write("]}")
+                    }
+                    w.write("]}")
+                }
+                w.write("]}")
             }
-            val root = JSONObject()
-                .put("bookId", book.bookId)
-                .put("title", book.title)
-                .put("author", book.author)
-                .put("filePath", book.filePath)
-                .put("cover", book.coverPath)
-                .put("rtl", book.isRtl)
-                .put("chapters", arr)
-            file(context, book.bookId).writeText(root.toString())
         } catch (e: Exception) {
             Log.w(TAG, "save failed: ${e.message}")
         }
@@ -60,44 +87,123 @@ object BookCache {
         val f = file(context, bookId)
         if (!f.exists()) return null
         return try {
-            val root = JSONObject(f.readText())
-            val chaptersArr = root.getJSONArray("chapters")
-            val chapters = ArrayList<Chapter>(chaptersArr.length())
-            for (i in 0 until chaptersArr.length()) {
-                val c = chaptersArr.getJSONObject(i)
-                val parasArr = c.getJSONArray("paras")
-                val paras = ArrayList<Paragraph>(parasArr.length())
-                for (j in 0 until parasArr.length()) {
-                    val p = parasArr.getJSONObject(j)
-                    val qArr = p.optJSONArray("q") ?: JSONArray()
-                    val sents = ArrayList<Sentence>(qArr.length())
-                    for (k in 0 until qArr.length()) {
-                        val s = qArr.getJSONObject(k)
-                        sents.add(Sentence(text = s.getString("t"), start = s.getInt("s")))
+            JsonReader(FileReader(f).let { java.io.BufferedReader(it, 64 * 1024) }).use { r ->
+                var id = bookId
+                var title = ""
+                var author = ""
+                var path = ""
+                var cover: String? = null
+                var rtl = false
+                val chapters = ArrayList<Chapter>()
+                r.beginObject()
+                while (r.hasNext()) {
+                    when (r.nextName()) {
+                        "bookId" -> id = r.nextString()
+                        "title" -> title = r.nextString()
+                        "author" -> author = r.nextString()
+                        "filePath" -> path = r.nextString()
+                        "cover" -> cover = r.nextString().takeIf { it.isNotBlank() }
+                        "rtl" -> rtl = r.nextBoolean()
+                        "chapters" -> {
+                            r.beginArray()
+                            while (r.hasNext()) chapters.add(readChapter(r))
+                            r.endArray()
+                        }
+                        else -> r.skipValue()
                     }
-                    paras.add(Paragraph(text = p.getString("t"), offset = p.getInt("o"), sentences = sents))
                 }
-                chapters.add(
-                    Chapter(
-                        id = c.getString("id"),
-                        title = c.optString("title", ""),
-                        text = c.getString("text"),
-                        paragraphs = paras,
-                    )
+                r.endObject()
+                if (chapters.isEmpty()) return null
+                Book(
+                    bookId = id,
+                    title = title,
+                    author = author,
+                    filePath = path,
+                    coverPath = cover,
+                    chapters = chapters,
+                    isRtl = rtl,
                 )
             }
-            Book(
-                bookId = root.getString("bookId"),
-                title = root.optString("title", ""),
-                author = root.optString("author", ""),
-                filePath = root.optString("filePath", ""),
-                coverPath = root.optString("cover", "").takeIf { it.isNotBlank() },
-                chapters = chapters,
-                isRtl = root.optBoolean("rtl", false),
-            )
         } catch (e: Exception) {
             Log.w(TAG, "load failed: ${e.message}")
             null
         }
+    }
+
+    private fun readChapter(r: JsonReader): Chapter {
+        var id = ""
+        var title = ""
+        var text = ""
+        val paras = ArrayList<Paragraph>()
+        r.beginObject()
+        while (r.hasNext()) {
+            when (r.nextName()) {
+                "id" -> id = r.nextString()
+                "title" -> title = r.nextString()
+                "text" -> text = r.nextString()
+                "paras" -> {
+                    r.beginArray()
+                    while (r.hasNext()) paras.add(readParagraph(r))
+                    r.endArray()
+                }
+                else -> r.skipValue()
+            }
+        }
+        r.endObject()
+        return Chapter(id = id, title = title, text = text, paragraphs = paras)
+    }
+
+    private fun readParagraph(r: JsonReader): Paragraph {
+        var text = ""
+        var offset = 0
+        val sents = ArrayList<Sentence>()
+        r.beginObject()
+        while (r.hasNext()) {
+            when (r.nextName()) {
+                "t" -> text = r.nextString()
+                "o" -> offset = r.nextInt()
+                "q" -> {
+                    r.beginArray()
+                    while (r.hasNext()) {
+                        var st = ""
+                        var ss = 0
+                        r.beginObject()
+                        while (r.hasNext()) {
+                            when (r.nextName()) {
+                                "t" -> st = r.nextString()
+                                "s" -> ss = r.nextInt()
+                                else -> r.skipValue()
+                            }
+                        }
+                        r.endObject()
+                        sents.add(Sentence(text = st, start = ss))
+                    }
+                    r.endArray()
+                }
+                else -> r.skipValue()
+            }
+        }
+        r.endObject()
+        return Paragraph(text = text, offset = offset, sentences = sents)
+    }
+
+    /** 字符串 → JSON 字面量（含引号），控制字符转义。 */
+    private fun jsonString(s: String): String {
+        val sb = StringBuilder(s.length + 8)
+        sb.append('"')
+        for (c in s) {
+            when (c) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> if (c.code < 0x20) {
+                    sb.append("\\u").append(c.code.toString(16).padStart(4, '0'))
+                } else sb.append(c)
+            }
+        }
+        sb.append('"')
+        return sb.toString()
     }
 }

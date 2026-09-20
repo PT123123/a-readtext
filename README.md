@@ -30,11 +30,22 @@
 | vits-melo-tts-zh_en | Melo TTS | 中英 | ~159 MB |
 | sherpa-onnx-vits-zh-ll | VITS | 中文 | ~113 MB |
 | vits-zh-aishell3 | VITS | 中文 (174 音色) | ~140 MB |
+| vits-zh-hf-fanchen-C | VITS | 中文 (187 音色) | ~114 MB |
+| vits-zh-hf-theresa | VITS | 中文 (804 音色) | ~115 MB |
+| vits-zh-hf-eula | VITS | 中文 (804 音色) | ~115 MB |
 | vits-cantonese-hf-xiaomaiiwn | VITS | 粤语 | ~103 MB |
 | vits-piper-en_US-amy-low | VITS Piper | 英文 | ~64 MB |
+| vits-piper-en_US-glados | VITS Piper | 英文 | ~64 MB |
+| vits-piper-en_US-libritts_r-medium | VITS Piper | 英文 (904 音色) | ~78 MB |
 
 下载地址规则：`https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/<id>.tar.bz2`
 （见 `model/ModelCatalog.kt`）
+
+> 拓展模型资源三条通道（详见 `model/ModelMirror.kt` 与 `ModelManagerActivity.kt`）：
+> ① 内置目录加一行 `official(...)`（体积/SHA 核验自官方 tts-models 发布页）；
+> ② 运行期「批量粘贴模型」按 `名称|URL` 添加自定义模型，无需重编译；
+> ③ 下载失败（403/超时/DNS/TLS）时卡片上点「换镜像重试」，在 GitHub 直连 ↔
+> 社区加速（ghproxy.net / gh-proxy.com）↔ 自定义镜像前缀之间轮换，选择按模型持久化。
 
 ## 架构：四套参考在 a-readtext 的落点
 

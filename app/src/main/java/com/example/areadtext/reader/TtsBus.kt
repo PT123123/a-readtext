@@ -35,6 +35,8 @@ data class ReadState(
     val sentenceAudioTotalMs: Long = 0,
     val chapterAudioMs: Long = 0,
     val speed: Float = 1f,
+    val sid: Int = 0,
+    val numSpeakers: Int = 1,
     val modelName: String = "",
     val error: String? = null,
     val sleepMinutes: Int = 0,
@@ -68,6 +70,7 @@ sealed class TtsCommand {
     data object PrevChapter : TtsCommand()
     data class JumpTo(val paragraphIndex: Int, val sentenceIndex: Int) : TtsCommand()
     data class SetSpeed(val speed: Float) : TtsCommand()
+    data class SetSid(val sid: Int) : TtsCommand()
     data class SetModel(val modelId: String) : TtsCommand()
     data class SetSleep(val minutes: Int) : TtsCommand()
     data object StopService : TtsCommand()

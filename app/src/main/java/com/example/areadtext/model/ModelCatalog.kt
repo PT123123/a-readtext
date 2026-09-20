@@ -211,6 +211,55 @@ object ModelCatalog {
             sizeBytes = 67_095_344,
             minRamMb = 256,
             language = "en"
+        ),
+
+        // ---- 英文 Piper 扩展（2026-09 核验自官方 tts-models 发布页）----
+        official(
+            id = "vits-piper-en_US-glados",
+            version = "v1.0",
+            name = "VITS 英文 Piper Glados",
+            description = "Piper 英文 Glados 机械女声（传送门彩蛋音色），单音色，适合英文趣味朗读",
+            sizeBytes = 67_208_137,
+            minRamMb = 256,
+            language = "en"
+        ),
+        official(
+            id = "vits-piper-en_US-libritts_r-medium",
+            version = "v1.0",
+            name = "VITS 英文 Piper LibriTTS (904 音色)",
+            description = "Piper 英文 LibriTTS 中量级，多达 904 个音色可选，适合英文朗读",
+            sizeBytes = 82_038_311,
+            minRamMb = 512,
+            language = "en"
+        ),
+
+        // ---- 中文 VITS HF 语料扩展（多音色，2026-09 核验自官方 tts-models 发布页）----
+        official(
+            id = "vits-zh-hf-fanchen-C",
+            version = "v1.0",
+            name = "VITS 中文 Fanchen C (187 音色)",
+            description = "HF Fanchen 语料中文 VITS，187 个音色可选，覆盖面广",
+            sizeBytes = 119_326_431,
+            minRamMb = 512,
+            language = "zh"
+        ),
+        official(
+            id = "vits-zh-hf-theresa",
+            version = "v1.0",
+            name = "VITS 中文 Theresa (804 音色)",
+            description = "HF Theresa 语料中文 VITS，804 个音色可选，选择丰富",
+            sizeBytes = 120_596_617,
+            minRamMb = 512,
+            language = "zh"
+        ),
+        official(
+            id = "vits-zh-hf-eula",
+            version = "v1.0",
+            name = "VITS 中文 Eula (804 音色)",
+            description = "HF Eula 语料中文 VITS，804 个音色可选，与 Theresa 同量级",
+            sizeBytes = 120_562_119,
+            minRamMb = 512,
+            language = "zh"
         )
     )
 

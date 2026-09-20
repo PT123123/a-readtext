@@ -70,6 +70,49 @@
     <string name="action_copy_link">复制链接</string>
     <string name="link_copied">下载链接已复制</string>
 
+    <!-- 下载失败：人话三层（显示在技术详情上方） -->
+    <string name="model_error_human_format">下载没有成功，别担心，问题可以解决。\n原因：%1$s。\n建议：%2$s。</string>
+    <string name="model_err_reason_403">下载源拒绝了这次请求（权限受限或被限流）</string>
+    <string name="model_err_action_403">点下方「换镜像重试」换一个下载通道再试</string>
+    <string name="model_err_reason_timeout">连接下载源超时，网络不稳定或对方限速</string>
+    <string name="model_err_action_timeout">点「换镜像重试」换通道；切换网络后也可直接「下载」断点续传</string>
+    <string name="model_err_reason_dns">找不到下载服务器地址（国内直连 GitHub 常见）</string>
+    <string name="model_err_action_dns">切换 Wi-Fi / 流量或开代理，或点「换镜像重试」走加速通道</string>
+    <string name="model_err_reason_ssl">安全连接被拦截，或设备时间不准确</string>
+    <string name="model_err_action_ssl">核对系统时间、退出需登录认证的公共 Wi-Fi 后重试</string>
+    <string name="model_err_reason_space">设备存储空间不足</string>
+    <string name="model_err_action_space">先清理存储（设置 → 存储管理），再回来点「下载」续传</string>
+    <string name="model_err_reason_sha">下载的文件校验未通过（网络丢包或镜像文件损坏）</string>
+    <string name="model_err_action_sha">点「换镜像重试」换通道重新下载；多次失败可点「取消」后重来</string>
+    <string name="model_err_reason_http4">下载地址不可用（HTTP %1$d）</string>
+    <string name="model_err_action_http4">核对链接是否已失效，或点「换镜像重试」</string>
+    <string name="model_err_reason_http5">下载源服务器暂时不可用</string>
+    <string name="model_err_action_http5">稍等片刻再点「下载」重试，或换镜像通道</string>
+    <string name="model_err_reason_network">网络中断或数据传输失败</string>
+    <string name="model_err_action_network">检查网络后点「下载」续传（支持断点）</string>
+    <string name="model_err_reason_other">下载过程中出现异常（%1$s）</string>
+    <string name="model_err_action_other">点「下载」重试；仍不行可复制下方技术详情反馈</string>
+
+    <!-- 镜像切换 -->
+    <string name="action_switch_mirror">换镜像重试</string>
+    <string name="mirror_current">下载通道：%1$s</string>
+    <string name="mirror_switched">已切换下载通道：%1$s，开始重试</string>
+    <string name="view_tech_details">查看技术详情</string>
+    <string name="hide_tech_details">收起技术详情</string>
+    <string name="copy_error_detail">复制详情</string>
+    <string name="error_detail_copied">技术详情已复制</string>
+    <string name="custom_mirror_dialog_title">自定义镜像前缀</string>
+    <string name="custom_mirror_dialog_hint">输入加速前缀，将自动拼在 GitHub 下载链接前，例如 https://ghproxy.net/</string>
+    <string name="custom_mirror_set">设为镜像</string>
+    <string name="custom_mirror_saved">已保存自定义镜像，开始重试</string>
+
+    <!-- 模型管理：汇总行与元信息 -->
+    <string name="model_summary">共 %1$d 个模型 · 已下载 %2$d · 占用 %3$s</string>
+    <string name="model_summary_active">当前音色：%1$s</string>
+    <string name="model_meta_format">%1$s · %2$s</string>
+    <string name="model_mem_format">建议内存 %1$d MB 以上</string>
+    <string name="model_active_chip">当前使用</string>
+
     <!-- Custom Model Dialog -->
     <string name="custom_model_dialog_title">添加自定义模型</string>
     <string name="custom_model_name_hint">模型名称</string>
@@ -174,8 +217,10 @@
 
     <!-- 书架 / 阅读器 -->
     <string name="shelf_title">书架</string>
-    <string name="empty_shelf">书架还是空的\n导入本地图书（EPUB / PDF / TXT / MD），即可离线逐句朗读</string>
+    <string name="empty_shelf">书架还是空的\n导入本地图书（EPUB / PDF / TXT / MD）\n或点下方「输入文字」，即可离线逐句朗读</string>
     <string name="import_book">打开文件</string>
+    <string name="import_book_short">导入图书</string>
+    <string name="shelf_add_text">输入文字</string>
     <string name="now_playing">正在朗读</string>
     <string name="import_done">已导入</string>
     <string name="import_failed">导入失败，文件可能损坏或格式不受支持</string>
@@ -184,6 +229,13 @@
     <string name="import_failed_no_pages">导入失败：PDF 文件损坏或无页面</string>
     <string name="import_failed_empty">导入失败：PDF 无文本内容</string>
     <string name="import_unsupported">不支持的格式（支持 EPUB / PDF / TXT / MD）</string>
+    <string name="import_failed_too_large">导入失败：TXT 文件过大（上限 32MB），请先拆分</string>
+    <string name="add_text_title">输入 / 粘贴文字</string>
+    <string name="add_text_hint_title">标题（可留空，默认取正文首行）</string>
+    <string name="add_text_hint_content">在此输入或长按粘贴要朗读的文字…</string>
+    <string name="add_text_save">加入书架</string>
+    <string name="add_text_empty">请先输入或粘贴文字内容</string>
+    <string name="add_text_too_large">文字内容过大（超过 32MB），请拆分后再添加</string>
     <string name="delete_book_confirm">删除本书？本地文件与朗读进度将被移除</string>
     <string name="chapter_count">%1$d 章</string>
     <string name="model_manager">模型管理</string>
@@ -215,6 +267,9 @@
     <string name="speed">语速</string>
     <string name="book_load_failed">书籍加载失败</string>
     <string name="book_not_ready">书籍尚未就绪，请稍候</string>
+    <string name="voice_label">音色</string>
+    <string name="voice_only_one">当前模型只有 1 个音色，想换音色请在「模型管理」切换模型</string>
+    <string name="voice_model_not_ready">朗读模型尚未就绪，请先点播放，或在「模型管理」启用一个模型</string>
     <string name="notification_ready">已就绪 · 打开阅读器开始朗读</string>
     <string name="cancel">取消</string>
     <string name="stop">停止</string>
