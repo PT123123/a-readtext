@@ -8,6 +8,10 @@ ADB := `bash scripts/resolve_adb.sh`
 DEBUG_APK := "app/build/outputs/apk/debug/app-debug.apk"
 RELEASE_APK := "app/build/outputs/apk/release/app-release.apk"
 
+# 发布 release APK
+publish:
+    lanpub add {{RELEASE_APK}}
+
 # 动态探测已连接设备序列号
 # scripts/pick_phone.sh 挑手机（按型号/特性排除平板），pick_tab.sh 挑平板
 PHONE_SERIAL := `bash scripts/pick_phone.sh`
